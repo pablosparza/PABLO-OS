@@ -25,21 +25,29 @@ const POSITIONS = [
 // ── date helpers ───────────────────────────────────
 const fmtTime = (iso: string) => {
   const d = new Date(iso)
-  if (d.getHours() === 0 && d.getMinutes() === 0) return 'All day'
-  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  // Display in Monterrey time (CST = UTC-6, no DST)
+  const mtyTime = d.toLocaleTimeString('en-US', { 
+    hour: 'numeric', minute: '2-digit', hour12: true,
+    timeZone: 'America/Monterrey'
+  })
+  // Check if midnight in MTY = all day
+  const mtyHour = parseInt(d.toLocaleString('en-US', { hour: 'numeric', hour12: false, timeZone: 'America/Monterrey' }))
+  if (mtyHour === 0 || mtyHour === 24) return 'All day'
+  return mtyTime
 }
 const fmtDate = (iso: string) => {
   const d = new Date(iso)
-  const ds = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
-  const ms = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-  return ds[d.getDay()] + ' ' + ms[d.getMonth()] + ' ' + d.getDate()
+  return d.toLocaleDateString('en-US', { 
+    weekday: 'short', month: 'short', day: 'numeric',
+    timeZone: 'America/Monterrey'
+  })
 }
 const countdown = (iso: string) => {
   const diff = Math.round((new Date(iso).getTime() - Date.now()) / 60000)
   if (diff <= 0) return 'Now'
   if (diff < 60) return `in ${diff}m`
   if (diff < 120) return `in ${Math.floor(diff/60)}h ${diff%60}m`
-  return fmtTime(iso)
+  return `at ${fmtTime(iso)}`
 }
 const duDays = (dateStr: string) => {
   const t = new Date(); t.setHours(0,0,0,0)
@@ -185,12 +193,17 @@ export default function PabloOS() {
   const calIntel = (() => {
     if (!calendar?.events?.length) return null
     const now = new Date()
-    // Use local timezone (browser/Monterrey) for day boundaries
-    const todayS = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
-    const todayE = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
-    const tomorrowS = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0)
-    const tomorrowE = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 23, 59, 59)
-    const weekE = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7, 23, 59, 59)
+    // Monterrey = CST = UTC-6 always (no DST)
+    const CST_OFFSET = 6 * 3600000 // 6 hours in ms
+    const mtyMs = now.getTime() - CST_OFFSET // current time in CST as if UTC
+    const mtyNow = new Date(mtyMs)
+    const y = mtyNow.getUTCFullYear(), mo = mtyNow.getUTCMonth(), day = mtyNow.getUTCDate()
+    // Day start/end in UTC (add back CST offset)
+    const todayS = new Date(Date.UTC(y, mo, day, 0) + CST_OFFSET)
+    const todayE = new Date(Date.UTC(y, mo, day, 23, 59, 59) + CST_OFFSET)
+    const tomorrowS = new Date(Date.UTC(y, mo, day + 1, 0) + CST_OFFSET)
+    const tomorrowE = new Date(Date.UTC(y, mo, day + 1, 23, 59, 59) + CST_OFFSET)
+    const weekE = new Date(Date.UTC(y, mo, day + 7, 23, 59, 59) + CST_OFFSET)
 
     const allFuture = calendar.events
       .filter((e:any) => new Date(e.start) > now)
