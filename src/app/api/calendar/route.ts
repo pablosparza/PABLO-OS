@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getCached, setCached } from '@/lib/cache'
 
-const ICAL_URL = process.env.ICAL_URL || 'https://calendar.google.com/calendar/ical/pablo%40dealground.com/public/basic.ics'
+const ICAL_URL = 'https://calendar.google.com/calendar/ical/pablo%40dealground.com/public/basic.ics'
 
 function parseIcal(text: string) {
   const events: any[] = []
@@ -32,43 +32,59 @@ function parseIcal(text: string) {
       start = new Date(clean)
     }
     if (isNaN(start.getTime())) return null
-    return {
-      summary: ev.SUMMARY,
-      start: start.toISOString(),
-      location: ev.LOCATION || '',
-      allDay,
-    }
+    return { summary: ev.SUMMARY, start: start.toISOString(), location: ev.LOCATION || '', allDay }
   }).filter(Boolean).sort((a: any, b: any) => new Date(a.start).getTime() - new Date(b.start).getTime())
 }
 
+async function tryFetch(url: string): Promise<string | null> {
+  const attempts = [
+    // Direct fetch - works on Vercel edge
+    async () => {
+      const r = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; PabloOS/1.0)', Accept: 'text/calendar' },
+        next: { revalidate: 0 }
+      })
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      return await r.text()
+    },
+    // Via allorigins
+    async () => {
+      const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, {
+        next: { revalidate: 0 }
+      })
+      if (!r.ok) throw new Error(`allorigins HTTP ${r.status}`)
+      return await r.text()
+    },
+    // Via corsproxy
+    async () => {
+      const r = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`, {
+        next: { revalidate: 0 }
+      })
+      if (!r.ok) throw new Error(`corsproxy HTTP ${r.status}`)
+      return await r.text()
+    },
+  ]
+  for (const attempt of attempts) {
+    try {
+      const text = await attempt()
+      if (text.includes('BEGIN:VCALENDAR')) return text
+    } catch {}
+  }
+  return null
+}
+
 export async function GET() {
-  try {
-    const r = await fetch(ICAL_URL, {
-      headers: { 
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        'Accept': 'text/calendar, */*'
-      },
-      cache: 'no-store'
-    })
-    if (!r.ok) throw new Error(`HTTP ${r.status}`)
-    const text = await r.text()
-    if (!text.includes('BEGIN:VCALENDAR')) throw new Error('Invalid iCal response')
-    
+  const text = await tryFetch(ICAL_URL)
+  if (text) {
     const events = parseIcal(text)
     const payload = { events, timestamp: new Date().toISOString(), status: 'live', count: events.length }
     await setCached('calendar', payload)
     return NextResponse.json(payload)
-  } catch (err: any) {
-    // Try cache
-    const cached = await getCached('calendar')
-    if (cached?.payload) {
-      return NextResponse.json({ ...cached.payload, status: 'cached', cachedAt: cached.updated_at })
-    }
-    return NextResponse.json({ 
-      events: [], 
-      status: 'unavailable', 
-      error: err.message,
-      message: 'Calendar feed temporarily unavailable'
-    })
   }
+  // Try cache
+  const cached = await getCached('calendar')
+  if (cached?.payload) {
+    return NextResponse.json({ ...cached.payload, status: 'cached', cachedAt: cached.updated_at })
+  }
+  return NextResponse.json({ events: [], status: 'unavailable', message: 'Calendar feed temporarily unavailable' })
 }

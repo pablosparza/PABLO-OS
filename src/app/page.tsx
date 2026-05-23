@@ -236,12 +236,12 @@ export default function PabloOS() {
 
   // ── OVERVIEW ───────────────────────────────────
   const Overview = () => (
-    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 280px', gridTemplateRows:'auto 1fr 1fr', gap:6, height:'100%', overflow:'hidden' }}>
+    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 280px', gridTemplateRows:'1fr 1fr auto', gap:6, height:'100%', overflow:'hidden' }}>
 
       {/* TOP LEFT — OPERATIONAL COMMAND (calendar + priorities) */}
       <div style={{ gridColumn:'1/2', display:'flex', flexDirection:'column', gap:6 }}>
         {/* SCHEDULE INTELLIGENCE */}
-        <div style={{ background:'var(--s1)', border:'0.5px solid var(--b3)', borderRadius:'var(--radius)', padding:'11px 13px', position:'relative', overflow:'hidden' }}>
+        <div style={{ background:'var(--s1)', border:'0.5px solid var(--b3)', borderRadius:'var(--radius)', padding:'11px 13px', position:'relative', overflow:'hidden', flex:'1 1 0', minHeight:0 }}>
           <div style={{ position:'absolute', top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${rc.col}80,transparent)`, opacity:.6 }} />
           <div style={{ fontSize:7, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:9, display:'flex', alignItems:'center', gap:5 }}>
             <i className="ti ti-calendar" style={{ fontSize:9, color:rc.col }} />
@@ -345,15 +345,15 @@ export default function PabloOS() {
             <div style={{ fontSize:11, fontWeight:500, color:rc.col, marginBottom:3 }}>{rn.headline}</div>
             <div style={{ fontSize:9, color:'var(--t2)', lineHeight:1.5 }}>{rn.sub}</div>
           </div>
-          {/* Key movers with context — NOT raw tickers */}
+          {/* Key macro indicators — focused on portfolio-relevant signals */}
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:5 }}>
             {[
-              { sym:'SPY', label:'US market', data:spyQ },
-              { sym:'QQQ', label:'Tech/AI', data:qqq },
-              { sym:'IONQ', label:'Quantum', data:ionqQ },
-              { sym:'BTC', label:'Crypto risk', price: crypto?.btc?.price, change: crypto?.btc?.change, up: crypto?.btc?.up },
-              { sym:'NVDA', label:'AI semis', data:nvdaQ },
-              { sym:'VTIP', label:'Inflation hedge', data:portData?.data?.VTIP },
+              { label:'IONQ quantum', sym:'IONQ', data:ionqQ },
+              { label:'NVDA AI semis', sym:'NVDA', data:nvdaQ },
+              { label:'VTIP inflation hedge', sym:'VTIP', data:portData?.data?.VTIP },
+              { label:'Bitcoin 24h', sym:'BTC', price:crypto?.btc?.price, change:crypto?.btc?.change, up:crypto?.btc?.up },
+              { label:'Ethereum 24h', sym:'ETH', price:crypto?.eth?.price, change:crypto?.eth?.change, up:crypto?.eth?.up },
+              { label:'SOXX semiconductors', sym:'SOXX', data:marketData?.data?.SOXX },
             ].map(item => {
               const d = item.data
               const price = d?.price || item.price
@@ -362,7 +362,7 @@ export default function PabloOS() {
               const col = change !== undefined ? (up ? '#00c873' : '#ff3d5a') : 'var(--t3)'
               return (
                 <div key={item.sym} style={{ background:'var(--s3)', borderRadius:'var(--rs)', padding:'6px 8px', border:'0.5px solid var(--b1)' }}>
-                  <div style={{ fontSize:7, color:'var(--t3)', marginBottom:2 }}>{item.label}</div>
+                  <div style={{ fontSize:7, color:'var(--t3)', marginBottom:1, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{item.label}</div>
                   <div style={{ fontSize:9, fontWeight:600, color:'var(--t2)' }}>{item.sym}</div>
                   {change !== undefined
                     ? <div style={{ fontSize:10, fontWeight:500, color:col }}>{up?'▲':'▼'} {chgFmt(change)}</div>
