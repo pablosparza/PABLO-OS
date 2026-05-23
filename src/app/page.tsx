@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback, useRef, memo } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 
 // ── helpers ────────────────────────────────────────
 const fmt = (v: number) => '$' + v.toLocaleString('en-US', { maximumFractionDigits: 0 })
@@ -80,35 +80,29 @@ function regimeNarrative(spy: any, ionq: any, nvda: any): { regime: string; head
 }
 
 
-// ── Isolated PayForm — uses refs so parent re-renders don't reset inputs ──
-const PayForm = memo(({ onAdd }: { onAdd: (p: any) => void }) => {
-  const nameRef = useRef<HTMLInputElement>(null)
-  const amtRef = useRef<HTMLInputElement>(null)
-  const dateRef = useRef<HTMLInputElement>(null)
-  const recurRef = useRef<HTMLInputElement>(null)
-  const handleAdd = () => {
-    const name = nameRef.current?.value?.trim()
-    const date = dateRef.current?.value
-    if (!name || !date) return
-    onAdd({ name, amount: amtRef.current?.value || '—', date, recurring: recurRef.current?.checked || false })
-    if (nameRef.current) nameRef.current.value = ''
-    if (amtRef.current) amtRef.current.value = ''
-    if (dateRef.current) dateRef.current.value = ''
-    if (recurRef.current) recurRef.current.checked = false
+// ── PayForm — fully self-contained, own state, never resets ──
+function PayForm({ onAdd }: { onAdd: (p: any) => void }) {
+  const [n, setN] = useState('')
+  const [a, setA] = useState('')
+  const [d, setD] = useState('')
+  const [r, setR] = useState(false)
+  const add = () => {
+    if (!n.trim() || !d) return
+    onAdd({ name: n.trim(), amount: a || '—', date: d, recurring: r })
+    setN(''); setA(''); setD(''); setR(false)
   }
   return (
     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:4, marginTop:8, paddingTop:8, borderTop:'0.5px solid var(--b1)' }}>
-      <input ref={nameRef} placeholder="e.g. Rent" defaultValue="" />
-      <input ref={amtRef} placeholder="e.g. $1,200" defaultValue="" />
-      <input ref={dateRef} type="date" style={{ gridColumn:'1/-1' }} />
+      <input placeholder="Name e.g. Rent" value={n} onChange={e => setN(e.target.value)} />
+      <input placeholder="Amount e.g. $1,200" value={a} onChange={e => setA(e.target.value)} />
+      <input type="date" value={d} onChange={e => setD(e.target.value)} style={{ gridColumn:'1/-1' }} />
       <div style={{ gridColumn:'1/-1', display:'flex', alignItems:'center', gap:4, fontSize:8, color:'var(--t2)' }}>
-        <input ref={recurRef} type="checkbox" /><label>Repeat monthly</label>
+        <input type="checkbox" checked={r} onChange={e => setR(e.target.checked)} /><label>Repeat monthly</label>
       </div>
-      <button className="fbtn" style={{ gridColumn:'1/-1' }} onClick={handleAdd}>Add obligation</button>
+      <button className="fbtn" style={{ gridColumn:'1/-1' }} onClick={add}>Add obligation</button>
     </div>
   )
-})
-PayForm.displayName = 'PayForm'
+}
 
 export default function PabloOS() {
   const [page, setPage] = useState('ov')
@@ -117,7 +111,6 @@ export default function PabloOS() {
   const [intel, setIntel] = useState<any>(null)
   const [marketData, setMarketData] = useState<any>(null)
   const [portData, setPortData] = useState<any>(null)
-  const [crypto, setCrypto] = useState<any>(null)
   const [mktNews, setMktNews] = useState<any>(null)
   const [worldNews, setWorldNews] = useState<any>(null)
   const [calendar, setCalendar] = useState<any>(null)
@@ -151,9 +144,15 @@ export default function PabloOS() {
   const loadIntel     = useCallback(async () => { try { const d = await fetch('/api/intelligence').then(r=>r.json()); setIntel(d); setRegime(d.regime||'neutral') } catch {} }, [])
   const loadMarket    = useCallback(async () => { try { const d = await fetch('/api/market?type=movers').then(r=>r.json()); setMarketData(d) } catch {} }, [])
   const loadPortfolio = useCallback(async () => { try { const d = await fetch('/api/market?type=portfolio').then(r=>r.json()); setPortData(d) } catch {} }, [])
-  const loadCrypto    = useCallback(async () => { try { const d = await fetch('/api/crypto').then(r=>r.json()); setCrypto(d) } catch {} }, [])
   const loadMktNews   = useCallback(async () => { try { const d = await fetch('/api/news').then(r=>r.json()); setMktNews(d) } catch {} }, [])
-  const loadWorldNews = useCallback(async () => { try { const d = await fetch('/api/world').then(r=>r.json()); setWorldNews(d) } catch {} }, [])
+  const loadWorldNews = useCallback(async () => {
+    try {
+      const d = await fetch('/api/world', { signal: AbortSignal.timeout(12000) }).then(r=>r.json())
+      setWorldNews(d)
+    } catch {
+      setWorldNews((prev: any) => prev || { articles: [], status: 'unavailable' })
+    }
+  }, [])
   const loadCalendar  = useCallback(async () => { try { const d = await fetch('/api/calendar').then(r=>r.json()); setCalendar(d) } catch {} }, [])
   const loadWeather   = useCallback(async () => {
     try {
@@ -163,9 +162,9 @@ export default function PabloOS() {
   }, [])
 
   const refreshAll = useCallback(() => {
-    loadIntel(); loadMarket(); loadPortfolio(); loadCrypto()
+    loadIntel(); loadMarket(); loadPortfolio()
     loadMktNews(); loadWorldNews(); loadCalendar(); loadWeather()
-  }, [loadIntel, loadMarket, loadPortfolio, loadCrypto, loadMktNews, loadWorldNews, loadCalendar, loadWeather])
+  }, [loadIntel, loadMarket, loadPortfolio, loadMktNews, loadWorldNews, loadCalendar, loadWeather])
 
   const initialized = typeof window !== 'undefined' && (window as any).__pablo_init
   useEffect(() => {
@@ -173,11 +172,10 @@ export default function PabloOS() {
       (window as any).__pablo_init = true
       refreshAll()
     }
-    const i1 = setInterval(loadCrypto, 120000)
     const i2 = setInterval(loadMarket, 300000)
     const i3 = setInterval(loadIntel, 600000)
     const i4 = setInterval(loadCalendar, 900000)
-    return () => { clearInterval(i1); clearInterval(i2); clearInterval(i3); clearInterval(i4) }
+    return () => { clearInterval(i2); clearInterval(i3); clearInterval(i4) }
   }, [])
 
   const rc = REGIME_CFG[regime] || REGIME_CFG.neutral
@@ -501,8 +499,6 @@ export default function PabloOS() {
               { label:'IONQ quantum', sym:'IONQ', data:ionqQ },
               { label:'NVDA AI semis', sym:'NVDA', data:nvdaQ },
               { label:'VTIP inflation hedge', sym:'VTIP', data:portData?.data?.VTIP },
-              { label:'Bitcoin 24h', sym:'BTC', price:crypto?.btc?.price, change:crypto?.btc?.change, up:crypto?.btc?.up },
-              { label:'Ethereum 24h', sym:'ETH', price:crypto?.eth?.price, change:crypto?.eth?.change, up:crypto?.eth?.up },
               { label:'SOXX semiconductors', sym:'SOXX', data:marketData?.data?.SOXX },
             ].map(item => {
               const d = item.data
@@ -607,22 +603,7 @@ export default function PabloOS() {
         </div>
 
         {/* BTC + ETH */}
-        <div style={{ background:'var(--s2)', border:'0.5px solid var(--b2)', borderRadius:'var(--radius)', padding:'9px 11px', flexShrink:0 }}>
-          <div style={{ fontSize:7, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.15em', marginBottom:6 }}>Crypto</div>
-          {crypto?.btc ? (
-            <>
-              {[{name:'Bitcoin',sym:'BTC',d:crypto.btc},{name:'Ethereum',sym:'ETH',d:crypto.eth}].map(({name,sym,d}) => (
-                <div key={sym} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'4px 0', borderBottom:'0.5px solid var(--b1)' }}>
-                  <div style={{ fontSize:9, fontWeight:600, color:'var(--t2)' }}>{name}</div>
-                  <div style={{ textAlign:'right' }}>
-                    <div style={{ fontSize:11, color: d.up ? '#00c873' : '#ff3d5a', fontVariantNumeric:'tabular-nums' }}>{fmt(d.price)}</div>
-                    <div style={{ fontSize:8, color: d.up ? '#00c873' : '#ff3d5a' }}>{chgFmt(d.change)} 24h</div>
-                  </div>
-                </div>
-              ))}
-            </>
-          ) : <div style={{ fontSize:9, color:'var(--t3)', fontStyle:'italic' }}>Crypto feed connecting...</div>}
-        </div>
+
 
         {/* PORTFOLIO SNAPSHOT */}
         <div style={{ background:'var(--s2)', border:'0.5px solid var(--b2)', borderRadius:'var(--radius)', padding:'9px 11px', flexShrink:0 }}>
@@ -752,8 +733,6 @@ export default function PabloOS() {
             ['Portfolio', portTotal ? fmt(portTotal) : '--'],
             ['SPY', spyQ ? chgFmt(spyQ.change) : '--'],
             ['QQQ', qqq ? chgFmt(qqq.change) : '--'],
-            ['BTC', crypto?.btc ? fmt(crypto.btc.price) : '--'],
-            ['ETH', crypto?.eth ? fmt(crypto.eth.price) : '--'],
             ['NVDA', nvdaQ ? chgFmt(nvdaQ.change) : '--'],
             ['IONQ', ionqQ ? chgFmt(ionqQ.change) : '--'],
           ].map(([label, val]) => {
@@ -937,7 +916,7 @@ export default function PabloOS() {
           {page === 'fin' && (
             <div className="page on" style={{padding:8}}>
               <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:5,marginBottom:8}}>
-                {[['Income',finance.i||'—'],['Expenses',finance.e||'—'],['Portfolio',portTotal?fmt(portTotal):'--'],['Crypto',crypto?.btc?fmt(crypto.btc.price)+' BTC':'--']].map(([l,v]) => (
+                {[['Income',finance.i||'—'],['Expenses',finance.e||'—'],['Portfolio',portTotal?fmt(portTotal):'--'],['Portfolio',portTotal?fmt(portTotal):'--']].map(([l,v]) => (
                   <div key={l} style={{background:'var(--s3)',borderRadius:'var(--rs)',padding:'8px 10px',border:'0.5px solid var(--b1)'}}><div style={{fontSize:7,color:'var(--t3)',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:3}}>{l}</div><div style={{fontSize:15,fontWeight:300,color:'var(--t1)'}}>{v}</div></div>
                 ))}
               </div>
@@ -946,8 +925,7 @@ export default function PabloOS() {
                   <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5}}>
                     <input placeholder="Monthly income" value={finance.i||''} onChange={e=>setFinance({...finance,i:e.target.value})} />
                     <input placeholder="Monthly expenses" value={finance.e||''} onChange={e=>setFinance({...finance,e:e.target.value})} />
-                    <input placeholder="Crypto value" value={finance.c||''} onChange={e=>setFinance({...finance,c:e.target.value})} style={{gridColumn:'1/-1'}} />
-                    <button className="fbtn" style={{gridColumn:'1/-1'}} onClick={()=>localStorage.setItem('pablo_fin',JSON.stringify(finance))}>Save</button>
+                                    <button className="fbtn" style={{gridColumn:'1/-1'}} onClick={()=>localStorage.setItem('pablo_fin',JSON.stringify(finance))}>Save</button>
                   </div>
                   <div style={{fontSize:7,color:'var(--t3)',marginTop:5}}><i className="ti ti-lock" style={{fontSize:7,marginRight:2}} />Stored locally</div>
                 </div>
