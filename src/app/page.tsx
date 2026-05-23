@@ -502,9 +502,9 @@ export default function PabloOS() {
               { label:'SOXX semiconductors', sym:'SOXX', data:marketData?.data?.SOXX },
             ].map(item => {
               const d = item.data
-              const price = d?.price || item.price
-              const change = d?.change ?? item.change
-              const up = d?.up ?? item.up
+              const price = d?.price
+              const change = d?.change
+              const up = d?.up
               const col = change !== undefined ? (up ? '#00c873' : '#ff3d5a') : 'var(--t3)'
               return (
                 <div key={item.sym} style={{ background:'var(--s3)', borderRadius:'var(--rs)', padding:'6px 8px', border:'0.5px solid var(--b1)' }}>
