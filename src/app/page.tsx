@@ -186,46 +186,107 @@ export default function PabloOS() {
   const calIntel = (() => {
     if (!calendar?.events?.length) return null
     const now = new Date()
-    const todayS = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const todayE = new Date(todayS.getTime() + 86400000)
-    const tomorrowE = new Date(todayS.getTime() + 2*86400000)
-    const weekE = new Date(todayS.getTime() + 7*86400000)
-    const todayEvs = calendar.events.filter((e:any) => new Date(e.start) >= todayS && new Date(e.start) < todayE && !e.allDay)
-    const tomorrowEvs = calendar.events.filter((e:any) => new Date(e.start) >= todayE && new Date(e.start) < tomorrowE && !e.allDay)
-    const weekEvs = calendar.events.filter((e:any) => new Date(e.start) >= todayE && new Date(e.start) < weekE)
-    const upcoming = calendar.events.filter((e:any) => new Date(e.start) > now).slice(0, 8)
-    const next = todayEvs.find((e:any) => new Date(e.start) > now) || upcoming[0]
-    const remaining = todayEvs.filter((e:any) => new Date(e.start) > now).length
+    // Use local timezone (browser/Monterrey) for day boundaries
+    const todayS = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
+    const todayE = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+    const tomorrowS = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0)
+    const tomorrowE = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 23, 59, 59)
+    const weekE = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7, 23, 59, 59)
+
+    const allFuture = calendar.events
+      .filter((e:any) => new Date(e.start) > now)
+      .sort((a:any, b:any) => new Date(a.start).getTime() - new Date(b.start).getTime())
+
+    const todayEvs = calendar.events
+      .filter((e:any) => {
+        const s = new Date(e.start)
+        return s >= todayS && s <= todayE
+      })
+      .sort((a:any,b:any) => new Date(a.start).getTime() - new Date(b.start).getTime())
+
+    const tomorrowEvs = calendar.events
+      .filter((e:any) => {
+        const s = new Date(e.start)
+        return s >= tomorrowS && s <= tomorrowE
+      })
+      .sort((a:any,b:any) => new Date(a.start).getTime() - new Date(b.start).getTime())
+
+    const weekEvs = calendar.events
+      .filter((e:any) => {
+        const s = new Date(e.start)
+        return s > tomorrowE && s <= weekE
+      })
+      .sort((a:any,b:any) => new Date(a.start).getTime() - new Date(b.start).getTime())
+
+    const next = todayEvs.find((e:any) => new Date(e.start) > now) || allFuture[0]
+    const remainingToday = todayEvs.filter((e:any) => new Date(e.start) > now && !e.allDay).length
     const intensity = todayEvs.length === 0 ? 'free' : todayEvs.length <= 2 ? 'light' : todayEvs.length <= 4 ? 'moderate' : 'heavy'
-    const intensityLabel = { free:'Free day', light:'Light schedule', moderate:'Moderate schedule', heavy:'Heavy schedule' }[intensity]
-    // find focus blocks (gaps > 90 min)
-    const sortedToday = [...todayEvs].sort((a,b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+    const intensityLabel = { free:'Free day', light:'Light schedule', moderate:'Moderate schedule', heavy:'Heavy schedule' }[intensity] as string
+
+    // Focus blocks
+    const sortedToday = todayEvs.filter((e:any) => !e.allDay)
     const focusBlocks: string[] = []
-    if (sortedToday.length === 0) focusBlocks.push('All day available')
-    else {
+    if (sortedToday.length === 0) {
+      focusBlocks.push('All day available for deep work')
+    } else {
       const workEnd = new Date(todayS); workEnd.setHours(18,0,0,0)
       const workStart = new Date(todayS); workStart.setHours(9,0,0,0)
-      let cursor = now > workStart ? now : workStart
+      let cursor = now > workStart ? new Date(now) : new Date(workStart)
       for (const ev of sortedToday) {
         const evStart = new Date(ev.start)
+        if (evStart <= cursor) { cursor = new Date(evStart); cursor.setHours(cursor.getHours()+1); continue }
         const gap = (evStart.getTime() - cursor.getTime()) / 60000
         if (gap >= 90 && cursor < workEnd) {
-          const endTime = evStart < workEnd ? evStart : workEnd
-          focusBlocks.push(`${fmtTime(cursor.toISOString())} – ${fmtTime(endTime.toISOString())}`)
+          const endT = evStart < workEnd ? evStart : workEnd
+          focusBlocks.push(`${fmtTime(cursor.toISOString())} – ${fmtTime(endT.toISOString())}`)
         }
-        cursor = new Date(ev.start)
-        cursor.setHours(cursor.getHours() + 1)
+        cursor = new Date(evStart); cursor.setHours(cursor.getHours()+1)
       }
       const remaining_time = (workEnd.getTime() - cursor.getTime()) / 60000
-      if (remaining_time >= 90) focusBlocks.push(`${fmtTime(cursor.toISOString())} – 6:00 PM`)
+      if (remaining_time >= 90 && cursor < workEnd) {
+        focusBlocks.push(`${fmtTime(cursor.toISOString())} – 6:00 PM`)
+      }
     }
-    // summary
+
+    // Intelligent analysis of each upcoming event
+    function analyzeEvent(ev: any): string {
+      const t = (ev.summary || '').toLowerCase()
+      const loc = (ev.location || '').toLowerCase()
+      const s = new Date(ev.start)
+      const daysAway = Math.ceil((s.getTime() - now.getTime()) / 86400000)
+
+      if (t.includes('pablo') && t.includes('dan')) return 'Your 1:1 with Dan. Bring updates on priorities and blockers.'
+      if (t.includes('dealground') && t.includes('team')) return 'Team sync. Prepare agenda — status, blockers, next actions.'
+      if (t.includes('dealground') || t.includes('deal ground')) return 'DealGround business meeting. Prepare deal status and key metrics.'
+      if (t.includes('paris') || t.includes('geran') || t.includes('ruthanne')) return 'External stakeholder call. Confirm agenda and prepare talking points.'
+      if (t.includes('anthropic') || t.includes('cowork')) return 'Cross-team collaboration session. Note action items.'
+      if (t.includes('interview') || t.includes('candidate')) return 'Interview scheduled. Review candidate profile beforehand.'
+      if (t.includes('review') || t.includes('planning')) return 'Planning/review session. Prepare structured summary.'
+      if (t.includes('demo') || t.includes('presentation')) return 'Demo or presentation. Test setup in advance.'
+      if (t.includes('lunch') || t.includes('dinner') || t.includes('coffee')) return 'Relationship meeting. Low agenda, high presence.'
+      if (t.includes('call') || t.includes('sync')) return 'Quick sync. Keep tight — confirm agenda beforehand.'
+      if (daysAway <= 1) return 'Tomorrow — confirm time and prep materials tonight.'
+      if (daysAway <= 3) return `In ${daysAway} days — add to prep list today.`
+      return ''
+    }
+
+    // Schedule summary
     let summary = ''
-    if (intensity === 'free') summary = 'Clear day — optimal for deep work and planning.'
-    else if (intensity === 'light') summary = `${todayEvs.length} meeting${todayEvs.length>1?'s':''} today. Significant focus time available.`
-    else if (intensity === 'moderate') summary = `${todayEvs.length} meetings today. Protect your focus blocks.`
-    else summary = `Heavy day — ${todayEvs.length} meetings. Prioritize ruthlessly.`
-    return { next, remaining, intensity, intensityLabel, summary, focusBlocks, todayEvs, tomorrowEvs, weekEvs, upcoming, todayS, todayE }
+    if (intensity === 'free') summary = 'Clear day — optimal for deep work and strategic planning.'
+    else if (intensity === 'light') summary = `${todayEvs.length} meeting${todayEvs.length>1?'s':''} today. Strong focus time available.`
+    else if (intensity === 'moderate') summary = `${todayEvs.length} meetings today. Protect your focus windows.`
+    else summary = `Heavy day — ${todayEvs.length} meetings. Prioritize ruthlessly, delegate where possible.`
+
+    // Tomorrow summary
+    const tomorrowSummary = tomorrowEvs.length === 0 ? 'Tomorrow is clear'
+      : tomorrowEvs.length <= 2 ? `Light tomorrow — ${tomorrowEvs.length} meeting${tomorrowEvs.length>1?'s':''}`
+      : `${tomorrowEvs.length} meetings tomorrow — plan ahead tonight`
+
+    return {
+      next, remainingToday, intensity, intensityLabel, summary, tomorrowSummary,
+      focusBlocks, todayEvs, tomorrowEvs, weekEvs, allFuture,
+      todayS, todayE, analyzeEvent
+    }
   })()
 
   // ── PAYMENTS INTELLIGENCE ──────────────────────
@@ -280,58 +341,107 @@ export default function PabloOS() {
           </div>
           {calIntel ? (
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-              {/* Next event */}
-              <div>
-                <div style={{ fontSize:7, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:5 }}>{calIntel.intensityLabel}</div>
+              {/* LEFT: Next + Focus + Today */}
+              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                {/* Next event */}
                 {calIntel.next ? (
-                  <div style={{ background:rc.bg, border:`0.5px solid ${rc.border}`, borderRadius:'var(--rs)', padding:'7px 9px', marginBottom:6 }}>
-                    <div style={{ fontSize:7, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:2 }}>Next</div>
-                    <div style={{ fontSize:11, fontWeight:500, color:'var(--t1)', marginBottom:1 }}>{calIntel.next.summary}</div>
-                    <div style={{ fontSize:9, color:'var(--t2)' }}>{countdown(calIntel.next.start)}{calIntel.next.location ? ' · '+calIntel.next.location : ''}</div>
-                    <div style={{ fontSize:7, color:'var(--t3)', marginTop:4, paddingTop:4, borderTop:'0.5px solid var(--b1)' }}>
-                      {calIntel.remaining} remaining today · {calIntel.summary}
+                  <div style={{ background:rc.bg, border:`0.5px solid ${rc.border}`, borderRadius:'var(--rs)', padding:'8px 10px' }}>
+                    <div style={{ fontSize:7, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:2 }}>
+                      {new Date(calIntel.next.start) >= calIntel.todayS && new Date(calIntel.next.start) <= calIntel.todayE ? 'Next today' : 'Next upcoming'}
                     </div>
+                    <div style={{ fontSize:12, fontWeight:500, color:'var(--t1)', marginBottom:2, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{calIntel.next.summary}</div>
+                    <div style={{ fontSize:9, color:rc.col, fontWeight:500 }}>{countdown(calIntel.next.start)}{calIntel.next.location ? ' · '+calIntel.next.location : ''}</div>
+                    {calIntel.analyzeEvent(calIntel.next) && (
+                      <div style={{ fontSize:8, color:'var(--t2)', marginTop:4, paddingTop:4, borderTop:'0.5px solid var(--b1)', fontStyle:'italic' }}>{calIntel.analyzeEvent(calIntel.next)}</div>
+                    )}
+                    <div style={{ fontSize:7, color:'var(--t3)', marginTop:4 }}>{calIntel.remainingToday} remaining today · {calIntel.intensityLabel}</div>
                   </div>
                 ) : (
-                  <div style={{ background:'var(--gd)', border:'0.5px solid #00c87330', borderRadius:'var(--rs)', padding:'7px 9px', marginBottom:6 }}>
+                  <div style={{ background:'var(--gd)', border:'0.5px solid #00c87330', borderRadius:'var(--rs)', padding:'8px 10px' }}>
                     <div style={{ fontSize:11, fontWeight:500, color:'#00c873', marginBottom:2 }}>Clear day</div>
-                    <div style={{ fontSize:9, color:'var(--t2)' }}>No meetings scheduled. Optimal for deep work.</div>
+                    <div style={{ fontSize:9, color:'var(--t2)' }}>{calIntel.summary}</div>
                   </div>
                 )}
                 {/* Focus blocks */}
                 {calIntel.focusBlocks.length > 0 && (
                   <div>
-                    <div style={{ fontSize:7, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:4 }}>Focus blocks</div>
+                    <div style={{ fontSize:7, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:4 }}>Deep work windows</div>
                     {calIntel.focusBlocks.slice(0,2).map((b,i) => (
-                      <div key={i} style={{ display:'flex', alignItems:'center', gap:5, padding:'3px 0', borderBottom:'0.5px solid var(--b1)' }}>
+                      <div key={i} style={{ display:'flex', alignItems:'center', gap:5, padding:'4px 0', borderBottom:'0.5px solid var(--b1)' }}>
                         <div style={{ width:2, height:14, background:'#00c87360', borderRadius:2, flexShrink:0 }} />
                         <span style={{ fontSize:9, color:'var(--t2)' }}>{b}</span>
                       </div>
                     ))}
                   </div>
                 )}
+                {/* Today summary */}
+                <div style={{ fontSize:8, color:'var(--t3)', fontStyle:'italic' }}>{calIntel.summary}</div>
+                {calIntel.tomorrowSummary && (
+                  <div style={{ fontSize:8, color:'var(--t3)' }}>{calIntel.tomorrowSummary}</div>
+                )}
               </div>
-              {/* Today's events list */}
-              <div>
-                <div style={{ fontSize:7, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:5 }}>Today & upcoming</div>
-                {calIntel.upcoming.slice(0,5).map((ev:any, i:number) => {
-                  const isToday = new Date(ev.start) >= calIntel.todayS && new Date(ev.start) < calIntel.todayE
-                  const isPast = new Date(ev.start) < new Date()
-                  return (
-                    <div key={i} style={{ display:'flex', gap:6, alignItems:'flex-start', padding:'4px 0', borderBottom:'0.5px solid var(--b1)', opacity: isPast ? .45 : 1 }}>
-                      <div style={{ width:2, background: isToday ? rc.col : '#4080ff', borderRadius:2, minHeight:20, flexShrink:0, marginTop:2 }} />
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:10, fontWeight:500, color:'var(--t1)', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{ev.summary}</div>
-                        <div style={{ fontSize:8, color:'var(--t3)' }}>{ev.allDay ? 'All day' : fmtTime(ev.start)}{ev.location ? ' · '+ev.location : ''}</div>
-                      </div>
-                      {isToday
-                        ? <span style={{ ...tagSty('#00c873'), marginTop:2 }}>today</span>
-                        : <span style={{ fontSize:7, color:'var(--t3)', whiteSpace:'nowrap', marginTop:3 }}>{fmtDate(ev.start)}</span>
-                      }
-                    </div>
-                  )
-                })}
-                {calendar?.status === 'cached' && <div style={{ fontSize:7, color:'var(--t3)', marginTop:4, fontStyle:'italic' }}>Confirmed {new Date(calendar.cachedAt||'').toLocaleTimeString()}</div>}
+
+              {/* RIGHT: Today events + Upcoming with analysis */}
+              <div style={{ overflow:'auto' }}>
+                {/* TODAY events */}
+                {calIntel.todayEvs.length > 0 && (
+                  <div style={{ marginBottom:8 }}>
+                    <div style={{ fontSize:7, color:rc.col, textTransform:'uppercase', letterSpacing:'.1em', marginBottom:4, fontWeight:600 }}>Today</div>
+                    {calIntel.todayEvs.map((ev:any, i:number) => {
+                      const isPast = new Date(ev.start) < new Date()
+                      const analysis = calIntel.analyzeEvent(ev)
+                      return (
+                        <div key={i} style={{ display:'flex', gap:6, alignItems:'flex-start', padding:'4px 0', borderBottom:'0.5px solid var(--b1)', opacity:isPast?.5:1 }}>
+                          <div style={{ width:2, background:isPast?'var(--t4)':rc.col, borderRadius:2, minHeight:isPast?14:20, flexShrink:0, marginTop:2 }} />
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontSize:10, fontWeight:500, color:isPast?'var(--t3)':'var(--t1)', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{ev.summary}</div>
+                            <div style={{ fontSize:8, color:'var(--t3)' }}>{ev.allDay ? 'All day' : fmtTime(ev.start)}{ev.location?' · '+ev.location:''}</div>
+                            {!isPast && analysis && <div style={{ fontSize:8, color:'var(--t2)', fontStyle:'italic', marginTop:1 }}>{analysis}</div>}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+                {/* TOMORROW */}
+                {calIntel.tomorrowEvs.length > 0 && (
+                  <div style={{ marginBottom:8 }}>
+                    <div style={{ fontSize:7, color:'#4080ff', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:4, fontWeight:600 }}>Tomorrow</div>
+                    {calIntel.tomorrowEvs.slice(0,3).map((ev:any, i:number) => {
+                      const analysis = calIntel.analyzeEvent(ev)
+                      return (
+                        <div key={i} style={{ display:'flex', gap:6, alignItems:'flex-start', padding:'4px 0', borderBottom:'0.5px solid var(--b1)' }}>
+                          <div style={{ width:2, background:'#4080ff80', borderRadius:2, minHeight:18, flexShrink:0, marginTop:2 }} />
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontSize:10, fontWeight:500, color:'var(--t1)', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{ev.summary}</div>
+                            <div style={{ fontSize:8, color:'var(--t3)' }}>{fmtTime(ev.start)}{ev.location?' · '+ev.location:''}</div>
+                            {analysis && <div style={{ fontSize:8, color:'var(--t2)', fontStyle:'italic', marginTop:1 }}>{analysis}</div>}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+                {/* UPCOMING this week */}
+                {calIntel.weekEvs.length > 0 && (
+                  <div>
+                    <div style={{ fontSize:7, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:4, fontWeight:600 }}>This week</div>
+                    {calIntel.weekEvs.slice(0,4).map((ev:any, i:number) => {
+                      const analysis = calIntel.analyzeEvent(ev)
+                      return (
+                        <div key={i} style={{ display:'flex', gap:6, alignItems:'flex-start', padding:'4px 0', borderBottom:'0.5px solid var(--b1)' }}>
+                          <div style={{ width:2, background:'var(--t4)', borderRadius:2, minHeight:18, flexShrink:0, marginTop:2 }} />
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontSize:10, fontWeight:500, color:'var(--t1)', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{ev.summary}</div>
+                            <div style={{ fontSize:8, color:'var(--t3)' }}>{fmtDate(ev.start)} · {ev.allDay?'All day':fmtTime(ev.start)}</div>
+                            {analysis && <div style={{ fontSize:8, color:'var(--t2)', fontStyle:'italic', marginTop:1 }}>{analysis}</div>}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+                {calendar?.status === 'cached' && <div style={{ fontSize:7, color:'var(--t3)', marginTop:6, fontStyle:'italic' }}>Confirmed {new Date(calendar.cachedAt||'').toLocaleTimeString()}</div>}
               </div>
             </div>
           ) : (
@@ -775,7 +885,7 @@ export default function PabloOS() {
                           <div style={{fontSize:7,color:'var(--t3)',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:2}}>Next</div>
                           <div style={{fontSize:12,fontWeight:500,color:'var(--t1)',marginBottom:2}}>{calIntel.next.summary}</div>
                           <div style={{fontSize:9,color:'var(--t2)'}}>{countdown(calIntel.next.start)}{calIntel.next.location?' · '+calIntel.next.location:''}</div>
-                          <div style={{fontSize:7,color:'var(--t3)',marginTop:5,paddingTop:5,borderTop:'0.5px solid var(--b1)'}}>{calIntel.remaining} remaining · {calIntel.summary}</div>
+                          <div style={{fontSize:7,color:'var(--t3)',marginTop:5,paddingTop:5,borderTop:'0.5px solid var(--b1)'}}>{calIntel.remainingToday} remaining · {calIntel.summary}</div>
                         </div>
                       )}
                       {calIntel.upcoming.slice(0,10).map((ev:any,i:number) => {
