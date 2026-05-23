@@ -682,7 +682,7 @@ export default function PabloOS() {
                 <div style={{ fontSize:8, color:'var(--t3)' }}>{fmtDate(ev.start)} · {ev.allDay ? 'All day' : fmtTime(ev.start)}</div>
               </div>
             </div>
-          )) : <div style={{ fontSize:9, color:'var(--t3)', fontStyle:'italic' }}>{calIntel ? 'No upcoming events this week' : 'Calendar offline — events unavailable'}</div>}
+          )) : <div style={{ fontSize:9, color:'var(--t3)', fontStyle:'italic' }}>{calIntel ? 'No upcoming events this week' : calendar?.status === 'setup_required' ? 'Enable public access in Google Calendar settings' : 'Calendar loading...'}</div>}
         </div>
         <div>
           <div style={{ fontSize:7, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:7, display:'flex', alignItems:'center', gap:5 }}>
@@ -888,7 +888,7 @@ export default function PabloOS() {
                           <div style={{fontSize:7,color:'var(--t3)',marginTop:5,paddingTop:5,borderTop:'0.5px solid var(--b1)'}}>{calIntel.remainingToday} remaining · {calIntel.summary}</div>
                         </div>
                       )}
-                      {calIntel.upcoming.slice(0,10).map((ev:any,i:number) => {
+                      {calIntel.allFuture.slice(0,10).map((ev:any,i:number) => {
                         const isT = new Date(ev.start) >= calIntel.todayS && new Date(ev.start) < calIntel.todayE
                         return (
                           <div key={i} style={{display:'flex',gap:7,alignItems:'flex-start',padding:'5px 0',borderBottom:'0.5px solid var(--b1)'}}>
