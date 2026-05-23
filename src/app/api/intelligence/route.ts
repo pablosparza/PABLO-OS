@@ -7,16 +7,14 @@ export async function GET() {
 
   // Fetch all data server-side in parallel
   const base = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-  const [marketRes, cryptoRes, newsRes, worldRes, calRes] = await Promise.allSettled([
+  const [marketRes, newsRes, worldRes, calRes] = await Promise.allSettled([
     fetch(`${base}/api/market?type=movers`).then(r => r.json()),
-    fetch(`${base}/api/crypto`).then(r => r.json()),
     fetch(`${base}/api/news`).then(r => r.json()),
     fetch(`${base}/api/world`).then(r => r.json()),
     fetch(`${base}/api/calendar`).then(r => r.json()),
   ])
 
   const market = marketRes.status === 'fulfilled' ? marketRes.value : null
-  const crypto = cryptoRes.status === 'fulfilled' ? cryptoRes.value : null
   const news = newsRes.status === 'fulfilled' ? newsRes.value : null
   const world = worldRes.status === 'fulfilled' ? worldRes.value : null
   const cal = calRes.status === 'fulfilled' ? calRes.value : null
@@ -66,32 +64,58 @@ export async function GET() {
     items.push({ text: `NVDA ${nvda.change >= 0 ? '▲ +' : '▼ '}${Math.abs(nvda.change).toFixed(2)}% — AI infrastructure ${nvda.up ? 'momentum' : 'cautious'}.`, context: 'Blackwell gross margin on Vera Rubin transition is the key metric. Top-line beat already priced.', tag: 'semis', color: nvda.up ? 'green' : 'amber' })
   }
 
-  // BTC
-  if (crypto?.btc?.price) {
-    const bc = crypto.btc.change
-    items.push({ text: `BTC ${bc >= 0 ? '+' : ''}${bc.toFixed(2)}% 24h — crypto ${bc >= 0 ? 'supporting' : 'working against'} risk narrative.`, context: 'Crypto acts as a 24hr leading indicator for risk-on/off sentiment across all asset classes.', tag: 'crypto', color: bc >= 0 ? 'green' : 'red' })
-  }
-
   // Calendar
   if (cal?.events?.length) {
     const nowIso = now.toISOString()
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
-    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString()
-    const todayEvs = cal.events.filter((e: any) => e.start >= todayStart && e.start < todayEnd)
-    const next = todayEvs.find((e: any) => !e.allDay && e.start > nowIso)
+    // CST = UTC-6 day boundaries
+    const CST = 6 * 3600000
+    const mtyMs = now.getTime() - CST
+    const mtyNow = new Date(mtyMs)
+    const y = mtyNow.getUTCFullYear(), mo = mtyNow.getUTCMonth(), dy = mtyNow.getUTCDate()
+    const todayStart = new Date(Date.UTC(y, mo, dy, 0) + CST).toISOString()
+    const todayEnd = new Date(Date.UTC(y, mo, dy, 23, 59, 59) + CST).toISOString()
+    const todayEvs = cal.events.filter((e: any) => e.start >= todayStart && e.start <= todayEnd && !e.allDay)
+    const tomorrowStart = new Date(Date.UTC(y, mo, dy + 1, 0) + CST).toISOString()
+    const tomorrowEnd = new Date(Date.UTC(y, mo, dy + 1, 23, 59, 59) + CST).toISOString()
+    const tomorrowEvs = cal.events.filter((e: any) => e.start >= tomorrowStart && e.start <= tomorrowEnd && !e.allDay)
+    
+    const next = todayEvs.find((e: any) => e.start > nowIso)
     if (next) {
       const diff = Math.round((new Date(next.start).getTime() - now.getTime()) / 60000)
       const countdown = diff <= 0 ? 'now' : diff < 60 ? `in ${diff}m` : `in ${Math.floor(diff / 60)}h ${diff % 60}m`
-      items.push({ text: `${next.summary} — ${countdown}${next.location ? ' · ' + next.location : ''}`, context: `${todayEvs.length} meetings today. ${todayEvs.filter((e: any) => !e.allDay && e.start > nowIso).length - 1} remaining after this.`, tag: 'meeting', color: 'blue' })
+      const remaining = todayEvs.filter((e: any) => e.start > nowIso).length
+      const intensity = todayEvs.length === 0 ? 'Clear day' : todayEvs.length <= 2 ? 'Light schedule' : todayEvs.length <= 4 ? 'Moderate schedule' : 'Heavy schedule'
+      items.push({ 
+        text: `${next.summary} — ${countdown}${next.location ? ' · ' + next.location : ''}`, 
+        context: `${intensity} · ${remaining} meeting${remaining !== 1 ? 's' : ''} remaining today${tomorrowEvs.length > 0 ? ` · ${tomorrowEvs.length} tomorrow` : ' · tomorrow clear'}`, 
+        tag: 'meeting', color: 'blue' 
+      })
+    } else if (todayEvs.length === 0) {
+      const nextAny = cal.events.find((e: any) => e.start > nowIso && !e.allDay)
+      if (nextAny) {
+        const diff = Math.round((new Date(nextAny.start).getTime() - now.getTime()) / 60000)
+        const daysAway = Math.floor(diff / (60 * 24))
+        items.push({ 
+          text: `Clear day — no meetings. Next: ${nextAny.summary}${daysAway > 0 ? ` in ${daysAway}d` : ' tomorrow'}`, 
+          context: 'Optimal for deep work and strategic planning today.', 
+          tag: 'agenda', color: 'green' 
+        })
+      }
     }
   }
 
   // Persistent portfolio intelligence
   items.push({ text: 'Core (VTI, AVUV, AVDV) intact. VTIP inflation hedge active. Oil at $98 validates positioning.', context: 'Long-term thesis unchanged. No action required on core positions today.', tag: 'portfolio', color: 'green' })
 
-  // Lifestyle
-  if (day >= 4) {
-    items.push({ text: 'Caifanes — Auditorio Nacional CDMX, May 29 & 30. This weekend.', context: 'Tickets still moving. One of the most significant Spanish rock acts performing live this year.', tag: 'event', color: 'purple' })
+  // Lifestyle — check if Caifanes weekend is near (May 29-30 2026)
+  const caifanesDate = new Date('2026-05-29T00:00:00-06:00')
+  const daysToEvent = Math.ceil((caifanesDate.getTime() - now.getTime()) / 86400000)
+  if (daysToEvent >= 0 && daysToEvent <= 7) {
+    items.push({ 
+      text: `Caifanes — Auditorio Nacional CDMX${daysToEvent === 0 ? ' — tonight!' : daysToEvent === 1 ? ' — tomorrow!' : ` — in ${daysToEvent} days`}`, 
+      context: 'May 29 & 30. One of the most significant Spanish rock acts performing live this year.', 
+      tag: 'event', color: 'purple' 
+    })
   }
 
   // Determine regime
@@ -104,7 +128,7 @@ export async function GET() {
     items: items.slice(0, 7),
     regime,
     session: { label: session[2] as string, context: session[3] as string },
-    dataStatus: { market: market?.status, crypto: crypto?.status, news: news?.status, world: world?.status, calendar: cal?.status },
+    dataStatus: { market: market?.status, news: news?.status, world: world?.status, calendar: cal?.status },
     timestamp: now.toISOString()
   })
 }

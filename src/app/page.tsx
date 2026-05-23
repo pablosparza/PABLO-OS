@@ -538,7 +538,10 @@ export default function PabloOS() {
         {/* WORLD INTELLIGENCE */}
         <div style={{ background:'var(--s2)', border:'0.5px solid var(--b2)', borderRadius:'var(--radius)', padding:'10px 12px', flex:1, overflow:'auto' }}>
           <div style={{ fontSize:7, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:8, display:'flex', alignItems:'center', gap:5 }}>
-            <i className="ti ti-world" style={{ fontSize:9 }} />World intelligence<button className="ca" style={{ marginLeft:'auto' }} onClick={loadWorldNews}><i className="ti ti-refresh" /></button>
+            <i className="ti ti-world" style={{ fontSize:9 }} />World intelligence
+            {worldNews?.status === 'live' && <span style={{ fontSize:7, color:'#00c873', marginLeft:4 }}>● live</span>}
+            {worldNews?.status === 'cached' && <span style={{ fontSize:7, color:'#f09020', marginLeft:4 }}>● cached</span>}
+            <button className="ca" style={{ marginLeft:'auto' }} onClick={loadWorldNews}><i className="ti ti-refresh" /></button>
           </div>
           {worldNews?.articles?.length ? worldNews.articles.slice(0,6).map((a:any, i:number) => {
             const why = whyMatters(a.title)
@@ -554,7 +557,34 @@ export default function PabloOS() {
                 <span style={{ ...tagSty(col), marginTop:1 }}>{a.label||'intel'}</span>
               </div>
             )
-          }) : <div style={{ fontSize:9, color:'var(--t3)', fontStyle:'italic' }}>{worldNews?.status === 'cached' ? `Intelligence feed confirmed ${new Date(worldNews.cachedAt||'').toLocaleTimeString()}` : 'World intelligence stream loading...'}</div>}
+          }) : (
+            <div>
+              {/* Static high-signal fallback when feed is loading or offline */}
+              {[
+                { src:'MACRO', title:'Fed holds rates — next decision June 18', label:'macro', why:'Rate path directly affects growth equity valuations and VTIP positioning.' },
+                { src:'ENERGY', title:'Oil near $98 — inflation expectations quietly repricing', label:'macro', why:'Energy costs pressure inflation trajectory. VTIP hedge well-positioned.' },
+                { src:'AI', title:'AI infrastructure demand accelerating — Blackwell supply constrained', label:'tech', why:'Core driver of NVDA momentum and semiconductor sector rotation.' },
+                { src:'GEO', title:'US-China trade tensions remain elevated on semiconductor exports', label:'geo', why:'Taiwan/chip supply chain risk affects NVDA, SOXX, SKYT positions.' },
+                { src:'RATES', title:'10-year yield at 4.6% — growth equity pressure sustained', label:'macro', why:'Higher duration risk compresses growth stock multiples across portfolio.' },
+              ].map((a, i) => {
+                const col = a.label === 'geo' ? '#ff3d5a' : a.label === 'macro' ? '#4080ff' : '#8868ff'
+                return (
+                  <div key={i} style={{ display:'flex', gap:7, alignItems:'flex-start', padding:'5px 0', borderBottom:'0.5px solid var(--b1)' }}>
+                    <div style={{ fontSize:7, fontWeight:700, color:'var(--t3)', textTransform:'uppercase', minWidth:26, paddingTop:1, flexShrink:0 }}>{a.src}</div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:10, color:'var(--t1)', lineHeight:1.4 }}>{a.title}</div>
+                      <div style={{ fontSize:8, color:'var(--t2)', marginTop:2, fontStyle:'italic' }}>{a.why}</div>
+                    </div>
+                    <span style={{ ...tagSty(col), marginTop:1 }}>{a.label}</span>
+                  </div>
+                )
+              })}
+              <div style={{ fontSize:7, color:'var(--t3)', marginTop:6, fontStyle:'italic', display:'flex', alignItems:'center', gap:4 }}>
+                <div style={{ width:4, height:4, borderRadius:'50%', background: worldNews?.status === 'unavailable' ? '#ff3d5a' : '#f09020', animation: worldNews?.status !== 'unavailable' ? 'lp 2s infinite' : 'none' }} />
+                {worldNews?.status === 'unavailable' ? 'Live feed offline — showing baseline macro context' : worldNews?.status === 'cached' ? `Last confirmed ${new Date(worldNews?.cachedAt||'').toLocaleTimeString()}` : 'Live feed connecting — showing baseline context'}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -565,7 +595,7 @@ export default function PabloOS() {
         <div style={{ background:'var(--s2)', border:'0.5px solid var(--b2)', borderRadius:'var(--radius)', padding:'9px 11px', flexShrink:0 }}>
           <div style={{ fontSize:7, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.15em', marginBottom:7, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
             Financial obligations
-            <button className="sw-ca" onClick={() => setShowPayForm(!showPayForm)}><i className="ti ti-plus" /></button>
+            <button onClick={() => setShowPayForm(!showPayForm)} style={{ background:'none', border:'0.5px solid var(--b3)', color:'var(--t2)', borderRadius:'var(--rs)', padding:'1px 6px', fontSize:8, cursor:'pointer', fontFamily:'inherit' }}>+ Add</button>
           </div>
           {payIntel.upcoming.length > 0 ? payIntel.upcoming.slice(0,5).map((p:any, i:number) => {
             const d = duDays(p.eff)
@@ -615,9 +645,6 @@ export default function PabloOS() {
             )
           }) || <div style={{ fontSize:9, color:'var(--t3)', fontStyle:'italic' }}>Loading market intelligence...</div>}
         </div>
-
-        {/* BTC + ETH */}
-
 
         {/* PORTFOLIO SNAPSHOT */}
         <div style={{ background:'var(--s2)', border:'0.5px solid var(--b2)', borderRadius:'var(--radius)', padding:'9px 11px', flexShrink:0 }}>
