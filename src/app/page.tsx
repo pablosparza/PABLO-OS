@@ -136,12 +136,16 @@ export default function PabloOS() {
     loadMktNews(); loadWorldNews(); loadCalendar(); loadWeather()
   }, [loadIntel, loadMarket, loadPortfolio, loadCrypto, loadMktNews, loadWorldNews, loadCalendar, loadWeather])
 
+  const initialized = typeof window !== 'undefined' && (window as any).__pablo_init
   useEffect(() => {
-    refreshAll()
-    const i1 = setInterval(loadCrypto, 60000)
-    const i2 = setInterval(loadMarket, 120000)
-    const i3 = setInterval(loadIntel, 300000)
-    const i4 = setInterval(loadCalendar, 300000)
+    if (!(window as any).__pablo_init) {
+      (window as any).__pablo_init = true
+      refreshAll()
+    }
+    const i1 = setInterval(loadCrypto, 120000)
+    const i2 = setInterval(loadMarket, 300000)
+    const i3 = setInterval(loadIntel, 600000)
+    const i4 = setInterval(loadCalendar, 900000)
     return () => { clearInterval(i1); clearInterval(i2); clearInterval(i3); clearInterval(i4) }
   }, [])
 
@@ -236,7 +240,7 @@ export default function PabloOS() {
 
   // ── OVERVIEW ───────────────────────────────────
   const Overview = () => (
-    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 280px', gridTemplateRows:'1fr 1fr auto', gap:6, height:'100%', overflow:'hidden' }}>
+    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 280px', gridTemplateRows:'1fr 1fr', gap:6, height:'100%', overflow:'hidden' }}>
 
       {/* TOP LEFT — OPERATIONAL COMMAND (calendar + priorities) */}
       <div style={{ gridColumn:'1/2', display:'flex', flexDirection:'column', gap:6 }}>
@@ -527,47 +531,40 @@ export default function PabloOS() {
 
       </div>
 
-      {/* BOTTOM LEFT — TOMORROW + WEEK AHEAD */}
-      <div style={{ gridColumn:'1/2', background:'var(--s2)', border:'0.5px solid var(--b2)', borderRadius:'var(--radius)', padding:'10px 12px', overflow:'auto' }}>
-        <div style={{ fontSize:7, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:8, display:'flex', alignItems:'center', gap:5 }}>
-          <i className="ti ti-calendar-week" style={{ fontSize:9 }} />Week ahead
-        </div>
-        {calIntel?.weekEvs?.length ? calIntel.weekEvs.slice(0,6).map((ev:any, i:number) => (
-          <div key={i} style={{ display:'flex', gap:6, alignItems:'flex-start', padding:'4px 0', borderBottom:'0.5px solid var(--b1)' }}>
-            <div style={{ width:2, background:'#4080ff60', borderRadius:2, minHeight:18, flexShrink:0, marginTop:2 }} />
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:10, fontWeight:500, color:'var(--t1)', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{ev.summary}</div>
-              <div style={{ fontSize:8, color:'var(--t3)' }}>{fmtDate(ev.start)} · {ev.allDay ? 'All day' : fmtTime(ev.start)}</div>
-            </div>
+      {/* BOTTOM — WEEK AHEAD + MARKET MOVERS combined full width */}
+      <div style={{ gridColumn:'1/3', background:'var(--s2)', border:'0.5px solid var(--b2)', borderRadius:'var(--radius)', padding:'10px 12px', overflow:'hidden', display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+        <div style={{ overflow:'auto' }}>
+          <div style={{ fontSize:7, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:7, display:'flex', alignItems:'center', gap:5 }}>
+            <i className="ti ti-calendar-week" style={{ fontSize:9 }} />Week ahead
           </div>
-        )) : <div style={{ fontSize:9, color:'var(--t3)', fontStyle:'italic' }}>No events this week</div>}
-      </div>
-
-      {/* BOTTOM CENTER — MARKET MOVERS (contextual, smaller role) */}
-      <div style={{ gridColumn:'2/3', background:'var(--s2)', border:'0.5px solid var(--b2)', borderRadius:'var(--radius)', padding:'10px 12px', overflow:'auto' }}>
-        <div style={{ fontSize:7, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:8, display:'flex', alignItems:'center', gap:5 }}>
-          <i className="ti ti-chart-line" style={{ fontSize:9 }} />Market movers<button className="ca" style={{ marginLeft:'auto' }} onClick={loadMarket}><i className="ti ti-refresh" /></button>
-        </div>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:5 }}>
-          {['SPY','QQQ','NVDA','IONQ','SOXX','PLTR','TSLA','AMD'].map(sym => {
-            const r = marketData?.data?.[sym]
-            const col = r?.price ? (r.up ? '#00c873' : '#ff3d5a') : 'var(--t3)'
-            return (
-              <div key={sym} style={{ background:'var(--s3)', borderRadius:'var(--rs)', padding:'6px 8px', border:'0.5px solid var(--b1)' }}>
-                <div style={{ fontSize:8, fontWeight:600, color:'var(--t2)' }}>{sym}</div>
-                {r?.price
-                  ? <><div style={{ fontSize:10, fontWeight:500, color:col }}>{r.up?'▲':'▼'} {chgFmt(r.change)}</div><div style={{ fontSize:8, color:'var(--t3)' }}>${r.price<100?r.price.toFixed(2):Math.round(r.price).toLocaleString()}</div></>
-                  : <div style={{ fontSize:9, color:'var(--t3)' }}>—</div>
-                }
+          {calIntel?.weekEvs?.length ? calIntel.weekEvs.slice(0,5).map((ev:any, i:number) => (
+            <div key={i} style={{ display:'flex', gap:6, alignItems:'flex-start', padding:'4px 0', borderBottom:'0.5px solid var(--b1)' }}>
+              <div style={{ width:2, background:'#4080ff60', borderRadius:2, minHeight:18, flexShrink:0, marginTop:2 }} />
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:10, fontWeight:500, color:'var(--t1)', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{ev.summary}</div>
+                <div style={{ fontSize:8, color:'var(--t3)' }}>{fmtDate(ev.start)} · {ev.allDay ? 'All day' : fmtTime(ev.start)}</div>
               </div>
-            )
-          })}
+            </div>
+          )) : <div style={{ fontSize:9, color:'var(--t3)', fontStyle:'italic' }}>{calIntel ? 'No upcoming events this week' : 'Calendar offline — events unavailable'}</div>}
         </div>
-        {marketData?.status && marketData.status !== 'live' && (
-          <div style={{ fontSize:7, color:'var(--t3)', marginTop:6, fontStyle:'italic' }}>
-            {marketData.status === 'cached' ? `Last confirmed ${new Date(marketData.cachedAt||'').toLocaleTimeString()}` : 'Live market data feed reconnecting'}
+        <div>
+          <div style={{ fontSize:7, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:7, display:'flex', alignItems:'center', gap:5 }}>
+            <i className="ti ti-chart-line" style={{ fontSize:9 }} />Market movers<button className="ca" style={{ marginLeft:'auto' }} onClick={loadMarket}><i className="ti ti-refresh" /></button>
           </div>
-        )}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:4 }}>
+            {['SPY','QQQ','NVDA','IONQ','SOXX','PLTR','TSLA','AMD'].map(sym => {
+              const r = marketData?.data?.[sym]
+              const col = r?.price ? (r.up ? '#00c873' : '#ff3d5a') : 'var(--t3)'
+              return (
+                <div key={sym} style={{ background:'var(--s3)', borderRadius:'var(--rs)', padding:'5px 7px', border:'0.5px solid var(--b1)' }}>
+                  <div style={{ fontSize:8, fontWeight:600, color:'var(--t2)' }}>{sym}</div>
+                  {r?.price ? <><div style={{ fontSize:10, fontWeight:500, color:col }}>{r.up?'▲':'▼'} {chgFmt(r.change)}</div><div style={{ fontSize:8, color:'var(--t3)' }}>${r.price<100?r.price.toFixed(2):Math.round(r.price).toLocaleString()}</div></> : <div style={{ fontSize:9, color:'var(--t3)' }}>—</div>}
+                </div>
+              )
+            })}
+          </div>
+          {marketData?.status === 'cached' && <div style={{ fontSize:7, color:'var(--t3)', marginTop:5, fontStyle:'italic' }}>Last confirmed {new Date(marketData.cachedAt||'').toLocaleTimeString()}</div>}
+        </div>
       </div>
     </div>
   )
