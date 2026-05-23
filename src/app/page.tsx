@@ -144,8 +144,29 @@ export default function PabloOS() {
   // local storage
   useEffect(() => {
     try {
-      const p = localStorage.getItem('pablo_pays'); if (p) setPayments(JSON.parse(p))
-      const f = localStorage.getItem('pablo_fin'); if (f) setFinance(JSON.parse(f))
+      // Load payments — use defaults if nothing saved yet
+      const savedPays = localStorage.getItem('pablo_pays')
+      if (savedPays) {
+        setPayments(JSON.parse(savedPays))
+      } else {
+        const defaultPays = [
+          { name:'Car Payment',   amount:'$582.22', date:'2026-06-06', recurring:true },
+          { name:'Credit Card 1', amount:'$60.00',  date:'2026-06-01', recurring:true },
+          { name:'Credit Card 2', amount:'$50.00',  date:'2026-06-01', recurring:true },
+          { name:'Rent',          amount:'$722.00', date:'2026-07-01', recurring:true },
+        ]
+        setPayments(defaultPays)
+        localStorage.setItem('pablo_pays', JSON.stringify(defaultPays))
+      }
+      // Load finance — use defaults if nothing saved yet
+      const savedFin = localStorage.getItem('pablo_fin')
+      if (savedFin) {
+        setFinance(JSON.parse(savedFin))
+      } else {
+        const defaultFin = { i:'$2,749.22', e:'$1,414.22' }
+        setFinance(defaultFin)
+        localStorage.setItem('pablo_fin', JSON.stringify(defaultFin))
+      }
     } catch {}
   }, [])
 
