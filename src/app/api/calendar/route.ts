@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getCached, setCached } from '@/lib/cache'
 
-const ICAL_URL = 'https://calendar.google.com/calendar/ical/pablo%40dealground.com/public/basic.ics'
+const ICAL_URL = process.env.ICAL_URL || 'https://calendar.google.com/calendar/ical/pablo%40dealground.com/public/basic.ics'
 
 function parseIcal(text: string) {
   const events: any[] = []
@@ -16,8 +16,7 @@ function parseIcal(text: string) {
       const idx = line.indexOf(':')
       if (idx > 0) {
         const k = line.slice(0, idx).split(';')[0]
-        cur[k] = line.slice(idx + 1)
-          .replace(/\\n/g, ' ').replace(/\\,/g, ',').replace(/\\/g, '').trim()
+        cur[k] = line.slice(idx + 1).replace(/\\n/g, ' ').replace(/\\,/g, ',').replace(/\\/g, '').trim()
       }
     }
   }
@@ -36,55 +35,53 @@ function parseIcal(text: string) {
   }).filter(Boolean).sort((a: any, b: any) => new Date(a.start).getTime() - new Date(b.start).getTime())
 }
 
-async function tryFetch(url: string): Promise<string | null> {
-  const attempts = [
-    // Direct fetch - works on Vercel edge
-    async () => {
-      const r = await fetch(url, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; PabloOS/1.0)', Accept: 'text/calendar' },
-        next: { revalidate: 0 }
-      })
-      if (!r.ok) throw new Error(`HTTP ${r.status}`)
-      return await r.text()
-    },
-    // Via allorigins
-    async () => {
-      const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, {
-        next: { revalidate: 0 }
-      })
-      if (!r.ok) throw new Error(`allorigins HTTP ${r.status}`)
-      return await r.text()
-    },
-    // Via corsproxy
-    async () => {
-      const r = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`, {
-        next: { revalidate: 0 }
-      })
-      if (!r.ok) throw new Error(`corsproxy HTTP ${r.status}`)
-      return await r.text()
-    },
-  ]
-  for (const attempt of attempts) {
-    try {
-      const text = await attempt()
-      if (text.includes('BEGIN:VCALENDAR')) return text
-    } catch {}
-  }
-  return null
-}
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const text = await tryFetch(ICAL_URL)
-  if (text) {
-    const events = parseIcal(text)
-    const payload = { events, timestamp: new Date().toISOString(), status: 'live', count: events.length }
-    await setCached('calendar', payload)
-    return NextResponse.json(payload)
+  // Try fetching the iCal
+  const proxies = [
+    ICAL_URL,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(ICAL_URL)}`,
+    `https://corsproxy.io/?${encodeURIComponent(ICAL_URL)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(ICAL_URL)}`,
+  ]
+
+  for (const url of proxies) {
+    try {
+      const r = await fetch(url, {
+        headers: { 
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/calendar, text/plain, */*',
+          'Cache-Control': 'no-cache',
+        },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(8000),
+      })
+      
+      if (!r.ok) continue
+      const text = await r.text()
+      if (!text.includes('BEGIN:VCALENDAR')) continue
+      
+      const events = parseIcal(text)
+      const payload = { events, timestamp: new Date().toISOString(), status: 'live', count: events.length }
+      await setCached('calendar', payload)
+      return NextResponse.json(payload)
+    } catch {
+      continue
+    }
   }
-  // Try cache
+
+  // Check cache
   const cached = await getCached('calendar')
-  if (cached?.payload) {
+  if (cached?.payload?.events?.length) {
     return NextResponse.json({ ...cached.payload, status: 'cached', cachedAt: cached.updated_at })
   }
-  return NextResponse.json({ events: [], status: 'unavailable', message: 'Calendar feed temporarily unavailable' })
+
+  // Return setup instructions
+  return NextResponse.json({ 
+    events: [], 
+    status: 'setup_required',
+    message: 'Calendar not public',
+    setup: 'Go to Google Calendar → Settings → your calendar → Access permissions → check "Make available to public"'
+  })
 }

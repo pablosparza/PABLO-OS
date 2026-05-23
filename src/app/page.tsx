@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef, memo } from 'react'
 
 // ── helpers ────────────────────────────────────────
 const fmt = (v: number) => '$' + v.toLocaleString('en-US', { maximumFractionDigits: 0 })
@@ -78,6 +78,37 @@ function regimeNarrative(spy: any, ionq: any, nvda: any): { regime: string; head
   if (nvda && !nvda.up) return { regime: 'neutral', headline: 'AI infrastructure cautious — semiconductors mixed', sub: 'NVDA showing post-earnings consolidation. Gross margin on Blackwell transition is the key watch.' }
   return { regime: 'neutral', headline: 'Markets range-bound — no clear conviction', sub: 'No directional catalyst. Oil at $98 quietly repricing inflation. VTIP hedge well-timed.' }
 }
+
+
+// ── Isolated PayForm — uses refs so parent re-renders don't reset inputs ──
+const PayForm = memo(({ onAdd }: { onAdd: (p: any) => void }) => {
+  const nameRef = useRef<HTMLInputElement>(null)
+  const amtRef = useRef<HTMLInputElement>(null)
+  const dateRef = useRef<HTMLInputElement>(null)
+  const recurRef = useRef<HTMLInputElement>(null)
+  const handleAdd = () => {
+    const name = nameRef.current?.value?.trim()
+    const date = dateRef.current?.value
+    if (!name || !date) return
+    onAdd({ name, amount: amtRef.current?.value || '—', date, recurring: recurRef.current?.checked || false })
+    if (nameRef.current) nameRef.current.value = ''
+    if (amtRef.current) amtRef.current.value = ''
+    if (dateRef.current) dateRef.current.value = ''
+    if (recurRef.current) recurRef.current.checked = false
+  }
+  return (
+    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:4, marginTop:8, paddingTop:8, borderTop:'0.5px solid var(--b1)' }}>
+      <input ref={nameRef} placeholder="e.g. Rent" defaultValue="" />
+      <input ref={amtRef} placeholder="e.g. $1,200" defaultValue="" />
+      <input ref={dateRef} type="date" style={{ gridColumn:'1/-1' }} />
+      <div style={{ gridColumn:'1/-1', display:'flex', alignItems:'center', gap:4, fontSize:8, color:'var(--t2)' }}>
+        <input ref={recurRef} type="checkbox" /><label>Repeat monthly</label>
+      </div>
+      <button className="fbtn" style={{ gridColumn:'1/-1' }} onClick={handleAdd}>Add obligation</button>
+    </div>
+  )
+})
+PayForm.displayName = 'PayForm'
 
 export default function PabloOS() {
   const [page, setPage] = useState('ov')
@@ -227,12 +258,7 @@ export default function PabloOS() {
 
   // ── payments persistence ───────────────────────
   const savePays = (p: any[]) => { setPayments(p); localStorage.setItem('pablo_pays', JSON.stringify(p)) }
-  const addPayment = () => {
-    if (!payForm.name || !payForm.date) return
-    savePays([...payments, payForm])
-    setPayForm({ name:'', amount:'', date:'', recurring:false })
-    setShowPayForm(false)
-  }
+
 
   // ── style helpers ──────────────────────────────
   const tagSty = (color: string) => ({ background: color+'20', color, fontSize:7, padding:'1px 5px', borderRadius:20, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'.06em', whiteSpace:'nowrap' as const, flexShrink:0 })
@@ -310,7 +336,17 @@ export default function PabloOS() {
             </div>
           ) : (
             <div style={{ fontSize:9, color:'var(--t3)', fontStyle:'italic' }}>
-              {calendar?.status === 'unavailable' ? 'Calendar feed offline · events unavailable' : 'Loading your schedule from Google Calendar...'}
+              {calendar?.status === 'setup_required' ? (
+                <div style={{background:'var(--ad)',border:'0.5px solid #f0902030',borderRadius:'var(--rs)',padding:'8px 10px'}}>
+                  <div style={{fontSize:9,fontWeight:600,color:'var(--a)',marginBottom:3}}>One-time setup needed</div>
+                  <div style={{fontSize:8,color:'var(--t2)',lineHeight:1.6}}>
+                    1. Open <b>calendar.google.com</b> → Settings ⚙️<br/>
+                    2. Click your calendar → "Access permissions"<br/>
+                    3. Check ✓ "Make available to public"<br/>
+                    4. Click refresh icon above
+                  </div>
+                </div>
+              ) : calendar?.status === 'unavailable' ? 'Calendar temporarily offline · retrying' : 'Loading schedule...'}
             </div>
           )}
         </div>
@@ -437,16 +473,7 @@ export default function PabloOS() {
             </div>
           )}
           {showPayForm && (
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:4, marginTop:8, paddingTop:8, borderTop:'0.5px solid var(--b1)' }}>
-              <input placeholder="e.g. Rent" value={payForm.name} onChange={e=>setPayForm({...payForm,name:e.target.value})} />
-              <input placeholder="e.g. $1,200" value={payForm.amount} onChange={e=>setPayForm({...payForm,amount:e.target.value})} />
-              <input type="date" value={payForm.date} onChange={e=>setPayForm({...payForm,date:e.target.value})} style={{ gridColumn:'1/-1' }} />
-              <div style={{ gridColumn:'1/-1', display:'flex', alignItems:'center', gap:4, fontSize:8, color:'var(--t2)' }}>
-                <input type="checkbox" checked={payForm.recurring} onChange={e=>setPayForm({...payForm,recurring:e.target.checked})} />
-                <label>Repeat monthly</label>
-              </div>
-              <button className="fbtn" style={{ gridColumn:'1/-1' }} onClick={addPayment}>Add obligation</button>
-            </div>
+            <PayForm onAdd={(p) => { savePays([...payments, p]); setShowPayForm(false) }} />
           )}
         </div>
 
@@ -788,15 +815,7 @@ export default function PabloOS() {
                       <div style={{fontSize:16,fontWeight:300,color:payIntel.free>0?'#00c873':'#ff3d5a'}}>{fmt(payIntel.free)}</div>
                     </div>
                   )}
-                  {showPayForm && (
-                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4,marginTop:8,paddingTop:8,borderTop:'0.5px solid var(--b1)'}}>
-                      <input placeholder="e.g. Rent" value={payForm.name} onChange={e=>setPayForm({...payForm,name:e.target.value})} />
-                      <input placeholder="e.g. $1,200" value={payForm.amount} onChange={e=>setPayForm({...payForm,amount:e.target.value})} />
-                      <input type="date" value={payForm.date} onChange={e=>setPayForm({...payForm,date:e.target.value})} style={{gridColumn:'1/-1'}} />
-                      <div style={{gridColumn:'1/-1',display:'flex',alignItems:'center',gap:4,fontSize:8,color:'var(--t2)'}}><input type="checkbox" checked={payForm.recurring} onChange={e=>setPayForm({...payForm,recurring:e.target.checked})} /><label>Monthly</label></div>
-                      <button className="fbtn" style={{gridColumn:'1/-1'}} onClick={addPayment}>Add</button>
-                    </div>
-                  )}
+                  {showPayForm && <PayForm onAdd={(p) => { savePays([...payments, p]); setShowPayForm(false) }} />}
                 </div>
               </div>
               <div style={{fontSize:7,fontWeight:600,color:'var(--t4)',textTransform:'uppercase',letterSpacing:'.18em',marginBottom:6}}>Full calendar</div>
@@ -830,7 +849,7 @@ export default function PabloOS() {
                     return <div key={i} style={{display:'flex',alignItems:'center',gap:6,padding:'5px 0',borderBottom:'0.5px solid var(--b1)'}}><div style={{fontSize:8,color:'var(--t3)',minWidth:42}}>{months[dt.getMonth()]} {dt.getDate()}</div><div style={{flex:1,fontSize:10,fontWeight:500,color:'var(--t1)'}}>{p.name}</div><div style={{fontSize:11,fontWeight:600,color:col}}>{p.amount}</div><button onClick={()=>savePays(payments.filter((_,idx)=>idx!==p.i))} style={{background:'none',border:'none',color:'var(--t4)',fontSize:9,padding:0}}><i className="ti ti-x" /></button></div>
                   })}
                   {payIntel.income > 0 && <div style={{marginTop:8,paddingTop:8,borderTop:'0.5px solid var(--b2)'}}><div style={{fontSize:8,color:'var(--t3)',marginBottom:2}}>Projected free cash</div><div style={{fontSize:16,fontWeight:300,color:payIntel.free>0?'#00c873':'#ff3d5a'}}>{fmt(payIntel.free)}</div></div>}
-                  {showPayForm && <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4,marginTop:8,paddingTop:8,borderTop:'0.5px solid var(--b1)'}}><input placeholder="Rent" value={payForm.name} onChange={e=>setPayForm({...payForm,name:e.target.value})} /><input placeholder="$1,200" value={payForm.amount} onChange={e=>setPayForm({...payForm,amount:e.target.value})} /><input type="date" value={payForm.date} onChange={e=>setPayForm({...payForm,date:e.target.value})} style={{gridColumn:'1/-1'}} /><div style={{gridColumn:'1/-1',display:'flex',alignItems:'center',gap:4,fontSize:8,color:'var(--t2)'}}><input type="checkbox" checked={payForm.recurring} onChange={e=>setPayForm({...payForm,recurring:e.target.checked})} /><label>Monthly</label></div><button className="fbtn" style={{gridColumn:'1/-1'}} onClick={addPayment}>Add</button></div>}
+                  {showPayForm && <PayForm onAdd={(p) => { savePays([...payments, p]); setShowPayForm(false) }} />}
                 </div>
               </div>
             </div>
