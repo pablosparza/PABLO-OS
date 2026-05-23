@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getCached, setCached } from '@/lib/cache'
 
-const SYMBOLS = ['SPY','QQQ','NVDA','IONQ','SOXX','PLTR','RGTI','TSLA','AMD','MSTR','MU','MCHP']
+const SYMBOLS = ['SPY','QQQ','NVDA','IONQ','SOXX','PLTR','RGTI','TSLA','AMD','MSTR','MU','MCHP','AMCA']
 const PORTFOLIO = ['VTI','VXUS','AVUV','AVDV','VTIP','RXRX','BE','MBLY','SKYT']
 
 async function fetchQuote(symbol: string): Promise<any> {

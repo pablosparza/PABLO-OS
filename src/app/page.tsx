@@ -733,7 +733,7 @@ export default function PabloOS() {
             <i className="ti ti-chart-line" style={{ fontSize:11 }} />Market movers<button className="ca" style={{ marginLeft:'auto' }} onClick={loadMarket}><i className="ti ti-refresh" /></button>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:4 }}>
-            {['SPY','QQQ','NVDA','IONQ','SOXX','PLTR','TSLA','AMD'].map(sym => {
+            {['SPY','QQQ','NVDA','IONQ','SOXX','PLTR','TSLA','AMD','AMCA'].map(sym => {
               const r = marketData?.data?.[sym]
               const col = r?.price ? (r.up ? '#00c873' : '#ff3d5a') : 'var(--t3)'
               return (
@@ -838,7 +838,7 @@ export default function PabloOS() {
                 <div style={{fontSize:11,color:'var(--t2)',lineHeight:1.5}}>{rn.sub}</div>
               </div>
               <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:5,marginBottom:8}}>
-                {['SPY','QQQ','NVDA','IONQ','SOXX','PLTR','RGTI','TSLA','AMD','MSTR','MU','MCHP'].map(sym => {
+                {['SPY','QQQ','NVDA','IONQ','SOXX','PLTR','RGTI','TSLA','AMD','MSTR','MU','MCHP','AMCA'].map(sym => {
                   const r = marketData?.data?.[sym]
                   const col = r?.price ? (r.up ? '#00c873' : '#ff3d5a') : 'var(--t3)'
                   return (
