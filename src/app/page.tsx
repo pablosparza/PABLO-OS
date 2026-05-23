@@ -104,7 +104,7 @@ function PayForm({ onAdd }: { onAdd: (p: any) => void }) {
       <input placeholder="Name e.g. Rent" value={n} onChange={e => setN(e.target.value)} />
       <input placeholder="Amount e.g. $1,200" value={a} onChange={e => setA(e.target.value)} />
       <input type="date" value={d} onChange={e => setD(e.target.value)} style={{ gridColumn:'1/-1' }} />
-      <div style={{ gridColumn:'1/-1', display:'flex', alignItems:'center', gap:4, fontSize:8, color:'var(--t2)' }}>
+      <div style={{ gridColumn:'1/-1', display:'flex', alignItems:'center', gap:4, fontSize:10, color:'var(--t2)' }}>
         <input type="checkbox" checked={r} onChange={e => setR(e.target.checked)} /><label>Repeat monthly</label>
       </div>
       <button className="fbtn" style={{ gridColumn:'1/-1' }} onClick={add}>Add obligation</button>
@@ -303,7 +303,8 @@ export default function PabloOS() {
 
   // ── PAYMENTS INTELLIGENCE ──────────────────────
   const payIntel = (() => {
-    const all = payments.map(p => ({ ...p, eff: p.recurring ? nextMonth(p.date) : p.date }))
+    const all = payments
+      .map((p, idx) => ({ ...p, eff: p.recurring ? nextMonth(p.date) : p.date, _idx: idx }))
       .filter(p => duDays(p.eff) >= 0)
       .sort((a,b) => new Date(a.eff).getTime() - new Date(b.eff).getTime())
       .slice(0, 8)
@@ -334,7 +335,7 @@ export default function PabloOS() {
 
 
   // ── style helpers ──────────────────────────────
-  const tagSty = (color: string) => ({ background: color+'20', color, fontSize:7, padding:'1px 5px', borderRadius:20, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'.06em', whiteSpace:'nowrap' as const, flexShrink:0 })
+  const tagSty = (color: string) => ({ background: color+'20', color, fontSize:9, padding:'1px 5px', borderRadius:20, fontWeight:600, textTransform:'uppercase' as const, letterSpacing:'.06em', whiteSpace:'nowrap' as const, flexShrink:0 })
   const urgentColor = (days: number) => days < 0 ? '#ff3d5a' : days <= 3 ? '#ff3d5a' : days <= 7 ? '#f09020' : '#00c873'
 
   // ── OVERVIEW ───────────────────────────────────
@@ -346,8 +347,8 @@ export default function PabloOS() {
         {/* SCHEDULE INTELLIGENCE */}
         <div style={{ background:'var(--s1)', border:'0.5px solid var(--b3)', borderRadius:'var(--radius)', padding:'11px 13px', position:'relative', overflow:'hidden', flex:'1 1 0', minHeight:0 }}>
           <div style={{ position:'absolute', top:0, left:0, right:0, height:1, background:`linear-gradient(90deg,transparent,${rc.col}80,transparent)`, opacity:.6 }} />
-          <div style={{ fontSize:7, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:9, display:'flex', alignItems:'center', gap:5 }}>
-            <i className="ti ti-calendar" style={{ fontSize:9, color:rc.col }} />
+          <div style={{ fontSize:9, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:9, display:'flex', alignItems:'center', gap:5 }}>
+            <i className="ti ti-calendar" style={{ fontSize:11, color:rc.col }} />
             Operational schedule
             <button className="ca" style={{ marginLeft:'auto' }} onClick={loadCalendar}><i className="ti ti-refresh" /></button>
           </div>
@@ -358,38 +359,38 @@ export default function PabloOS() {
                 {/* Next event */}
                 {calIntel.next ? (
                   <div style={{ background:rc.bg, border:`0.5px solid ${rc.border}`, borderRadius:'var(--rs)', padding:'8px 10px' }}>
-                    <div style={{ fontSize:7, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:2 }}>
+                    <div style={{ fontSize:9, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:2 }}>
                       {new Date(calIntel.next.start) >= calIntel.todayS && new Date(calIntel.next.start) <= calIntel.todayE ? 'Next today' : 'Next upcoming'}
                     </div>
-                    <div style={{ fontSize:12, fontWeight:500, color:'var(--t1)', marginBottom:2, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{calIntel.next.summary}</div>
-                    <div style={{ fontSize:9, color:rc.col, fontWeight:500 }}>{countdown(calIntel.next.start)}{calIntel.next.location ? ' · '+calIntel.next.location : ''}</div>
+                    <div style={{ fontSize:13, fontWeight:500, color:'var(--t1)', marginBottom:2, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{calIntel.next.summary}</div>
+                    <div style={{ fontSize:11, color:rc.col, fontWeight:500 }}>{countdown(calIntel.next.start)}{calIntel.next.location ? ' · '+calIntel.next.location : ''}</div>
                     {calIntel.analyzeEvent(calIntel.next) && (
-                      <div style={{ fontSize:8, color:'var(--t2)', marginTop:4, paddingTop:4, borderTop:'0.5px solid var(--b1)', fontStyle:'italic' }}>{calIntel.analyzeEvent(calIntel.next)}</div>
+                      <div style={{ fontSize:10, color:'var(--t2)', marginTop:4, paddingTop:4, borderTop:'0.5px solid var(--b1)', fontStyle:'italic' }}>{calIntel.analyzeEvent(calIntel.next)}</div>
                     )}
-                    <div style={{ fontSize:7, color:'var(--t3)', marginTop:4 }}>{calIntel.remainingToday} remaining today · {calIntel.intensityLabel}</div>
+                    <div style={{ fontSize:10, color:'var(--t3)', marginTop:4 }}>{calIntel.remainingToday} remaining today · {calIntel.intensityLabel}</div>
                   </div>
                 ) : (
                   <div style={{ background:'var(--gd)', border:'0.5px solid #00c87330', borderRadius:'var(--rs)', padding:'8px 10px' }}>
-                    <div style={{ fontSize:11, fontWeight:500, color:'#00c873', marginBottom:2 }}>Clear day</div>
-                    <div style={{ fontSize:9, color:'var(--t2)' }}>{calIntel.summary}</div>
+                    <div style={{ fontSize:13, fontWeight:500, color:'#00c873', marginBottom:2 }}>Clear day</div>
+                    <div style={{ fontSize:11, color:'var(--t2)' }}>{calIntel.summary}</div>
                   </div>
                 )}
                 {/* Focus blocks */}
                 {calIntel.focusBlocks.length > 0 && (
                   <div>
-                    <div style={{ fontSize:7, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:4 }}>Deep work windows</div>
+                    <div style={{ fontSize:9, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:4 }}>Deep work windows</div>
                     {calIntel.focusBlocks.slice(0,2).map((b,i) => (
                       <div key={i} style={{ display:'flex', alignItems:'center', gap:5, padding:'4px 0', borderBottom:'0.5px solid var(--b1)' }}>
                         <div style={{ width:2, height:14, background:'#00c87360', borderRadius:2, flexShrink:0 }} />
-                        <span style={{ fontSize:9, color:'var(--t2)' }}>{b}</span>
+                        <span style={{ fontSize:11, color:'var(--t2)' }}>{b}</span>
                       </div>
                     ))}
                   </div>
                 )}
                 {/* Today summary */}
-                <div style={{ fontSize:8, color:'var(--t3)', fontStyle:'italic' }}>{calIntel.summary}</div>
+                <div style={{ fontSize:10, color:'var(--t3)', fontStyle:'italic' }}>{calIntel.summary}</div>
                 {calIntel.tomorrowSummary && (
-                  <div style={{ fontSize:8, color:'var(--t3)' }}>{calIntel.tomorrowSummary}</div>
+                  <div style={{ fontSize:10, color:'var(--t3)' }}>{calIntel.tomorrowSummary}</div>
                 )}
               </div>
 
@@ -398,7 +399,7 @@ export default function PabloOS() {
                 {/* TODAY events */}
                 {calIntel.todayEvs.length > 0 && (
                   <div style={{ marginBottom:8 }}>
-                    <div style={{ fontSize:7, color:rc.col, textTransform:'uppercase', letterSpacing:'.1em', marginBottom:4, fontWeight:600 }}>Today</div>
+                    <div style={{ fontSize:9, color:rc.col, textTransform:'uppercase', letterSpacing:'.1em', marginBottom:4, fontWeight:600 }}>Today</div>
                     {calIntel.todayEvs.map((ev:any, i:number) => {
                       const isPast = new Date(ev.start) < new Date()
                       const analysis = calIntel.analyzeEvent(ev)
@@ -406,9 +407,9 @@ export default function PabloOS() {
                         <div key={i} style={{ display:'flex', gap:6, alignItems:'flex-start', padding:'4px 0', borderBottom:'0.5px solid var(--b1)', opacity:isPast?.5:1 }}>
                           <div style={{ width:2, background:isPast?'var(--t4)':rc.col, borderRadius:2, minHeight:isPast?14:20, flexShrink:0, marginTop:2 }} />
                           <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontSize:10, fontWeight:500, color:isPast?'var(--t3)':'var(--t1)', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{ev.summary}</div>
-                            <div style={{ fontSize:8, color:'var(--t3)' }}>{ev.allDay ? 'All day' : fmtTime(ev.start)}{ev.location?' · '+ev.location:''}</div>
-                            {!isPast && analysis && <div style={{ fontSize:8, color:'var(--t2)', fontStyle:'italic', marginTop:1 }}>{analysis}</div>}
+                            <div style={{ fontSize:12, fontWeight:500, color:isPast?'var(--t3)':'var(--t1)', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{ev.summary}</div>
+                            <div style={{ fontSize:10, color:'var(--t3)' }}>{ev.allDay ? 'All day' : fmtTime(ev.start)}{ev.location?' · '+ev.location:''}</div>
+                            {!isPast && analysis && <div style={{ fontSize:10, color:'var(--t2)', fontStyle:'italic', marginTop:1 }}>{analysis}</div>}
                           </div>
                         </div>
                       )
@@ -418,16 +419,16 @@ export default function PabloOS() {
                 {/* TOMORROW */}
                 {calIntel.tomorrowEvs.length > 0 && (
                   <div style={{ marginBottom:8 }}>
-                    <div style={{ fontSize:7, color:'#4080ff', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:4, fontWeight:600 }}>Tomorrow</div>
+                    <div style={{ fontSize:9, color:'#4080ff', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:4, fontWeight:600 }}>Tomorrow</div>
                     {calIntel.tomorrowEvs.slice(0,3).map((ev:any, i:number) => {
                       const analysis = calIntel.analyzeEvent(ev)
                       return (
                         <div key={i} style={{ display:'flex', gap:6, alignItems:'flex-start', padding:'4px 0', borderBottom:'0.5px solid var(--b1)' }}>
                           <div style={{ width:2, background:'#4080ff80', borderRadius:2, minHeight:18, flexShrink:0, marginTop:2 }} />
                           <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontSize:10, fontWeight:500, color:'var(--t1)', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{ev.summary}</div>
-                            <div style={{ fontSize:8, color:'var(--t3)' }}>{fmtTime(ev.start)}{ev.location?' · '+ev.location:''}</div>
-                            {analysis && <div style={{ fontSize:8, color:'var(--t2)', fontStyle:'italic', marginTop:1 }}>{analysis}</div>}
+                            <div style={{ fontSize:12, fontWeight:500, color:'var(--t1)', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{ev.summary}</div>
+                            <div style={{ fontSize:10, color:'var(--t3)' }}>{fmtTime(ev.start)}{ev.location?' · '+ev.location:''}</div>
+                            {analysis && <div style={{ fontSize:10, color:'var(--t2)', fontStyle:'italic', marginTop:1 }}>{analysis}</div>}
                           </div>
                         </div>
                       )
@@ -437,31 +438,31 @@ export default function PabloOS() {
                 {/* UPCOMING this week */}
                 {calIntel.weekEvs.length > 0 && (
                   <div>
-                    <div style={{ fontSize:7, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:4, fontWeight:600 }}>This week</div>
+                    <div style={{ fontSize:9, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:4, fontWeight:600 }}>This week</div>
                     {calIntel.weekEvs.slice(0,4).map((ev:any, i:number) => {
                       const analysis = calIntel.analyzeEvent(ev)
                       return (
                         <div key={i} style={{ display:'flex', gap:6, alignItems:'flex-start', padding:'4px 0', borderBottom:'0.5px solid var(--b1)' }}>
                           <div style={{ width:2, background:'var(--t4)', borderRadius:2, minHeight:18, flexShrink:0, marginTop:2 }} />
                           <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontSize:10, fontWeight:500, color:'var(--t1)', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{ev.summary}</div>
-                            <div style={{ fontSize:8, color:'var(--t3)' }}>{fmtDate(ev.start)} · {ev.allDay?'All day':fmtTime(ev.start)}</div>
-                            {analysis && <div style={{ fontSize:8, color:'var(--t2)', fontStyle:'italic', marginTop:1 }}>{analysis}</div>}
+                            <div style={{ fontSize:12, fontWeight:500, color:'var(--t1)', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{ev.summary}</div>
+                            <div style={{ fontSize:10, color:'var(--t3)' }}>{fmtDate(ev.start)} · {ev.allDay?'All day':fmtTime(ev.start)}</div>
+                            {analysis && <div style={{ fontSize:10, color:'var(--t2)', fontStyle:'italic', marginTop:1 }}>{analysis}</div>}
                           </div>
                         </div>
                       )
                     })}
                   </div>
                 )}
-                {calendar?.status === 'cached' && <div style={{ fontSize:7, color:'var(--t3)', marginTop:6, fontStyle:'italic' }}>Confirmed {new Date(calendar.cachedAt||'').toLocaleTimeString()}</div>}
+                {calendar?.status === 'cached' && <div style={{ fontSize:9, color:'var(--t3)', marginTop:6, fontStyle:'italic' }}>Confirmed {new Date(calendar.cachedAt||'').toLocaleTimeString()}</div>}
               </div>
             </div>
           ) : (
-            <div style={{ fontSize:9, color:'var(--t3)', fontStyle:'italic' }}>
+            <div style={{ fontSize:11, color:'var(--t3)', fontStyle:'italic' }}>
               {calendar?.status === 'setup_required' ? (
                 <div style={{background:'var(--ad)',border:'0.5px solid #f0902030',borderRadius:'var(--rs)',padding:'8px 10px'}}>
-                  <div style={{fontSize:9,fontWeight:600,color:'var(--a)',marginBottom:3}}>One-time setup needed</div>
-                  <div style={{fontSize:8,color:'var(--t2)',lineHeight:1.6}}>
+                  <div style={{fontSize:11,fontWeight:600,color:'var(--a)',marginBottom:3}}>One-time setup needed</div>
+                  <div style={{fontSize:10,color:'var(--t2)',lineHeight:1.6}}>
                     1. Open <b>calendar.google.com</b> → Settings ⚙️<br/>
                     2. Click your calendar → "Access permissions"<br/>
                     3. Check ✓ "Make available to public"<br/>
@@ -475,8 +476,8 @@ export default function PabloOS() {
 
         {/* EXECUTIVE INTELLIGENCE */}
         <div style={{ background:'var(--s2)', border:'0.5px solid var(--b2)', borderRadius:'var(--radius)', padding:'10px 12px', flex:1, overflow:'auto' }}>
-          <div style={{ fontSize:7, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:8, display:'flex', alignItems:'center', gap:5 }}>
-            <i className="ti ti-brain" style={{ fontSize:9, color:rc.col }} />
+          <div style={{ fontSize:9, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:8, display:'flex', alignItems:'center', gap:5 }}>
+            <i className="ti ti-brain" style={{ fontSize:11, color:rc.col }} />
             What matters right now
             <button className="ca" style={{ marginLeft:'auto' }} onClick={loadIntel}><i className="ti ti-refresh" /></button>
           </div>
@@ -487,13 +488,13 @@ export default function PabloOS() {
               <div key={i} style={{ display:'flex', gap:7, alignItems:'flex-start', padding:'6px 0', borderBottom:'0.5px solid var(--b1)' }}>
                 <div style={{ width:2, background:col, opacity:.8, borderRadius:2, minHeight:22, flexShrink:0, marginTop:2 }} />
                 <div style={{ flex:1 }}>
-                  <div style={{ fontSize:10, color:'var(--t1)', lineHeight:1.5 }}>{item.text}</div>
-                  {item.context && <div style={{ fontSize:8, color:'var(--t2)', marginTop:2, fontStyle:'italic', lineHeight:1.35 }}>{item.context}</div>}
+                  <div style={{ fontSize:12, color:'var(--t1)', lineHeight:1.5 }}>{item.text}</div>
+                  {item.context && <div style={{ fontSize:10, color:'var(--t2)', marginTop:2, fontStyle:'italic', lineHeight:1.35 }}>{item.context}</div>}
                 </div>
                 <span style={{ ...tagSty(col), marginTop:3 }}>{item.tag}</span>
               </div>
             )
-          }) : <div style={{ fontSize:9, color:'var(--t3)', fontStyle:'italic' }}>Building intelligence briefing...</div>}
+          }) : <div style={{ fontSize:11, color:'var(--t3)', fontStyle:'italic' }}>Building intelligence briefing...</div>}
         </div>
       </div>
 
@@ -501,11 +502,11 @@ export default function PabloOS() {
       <div style={{ gridColumn:'2/3', display:'flex', flexDirection:'column', gap:6 }}>
         {/* MACRO CONTEXT */}
         <div style={{ background:'var(--s2)', border:'0.5px solid var(--b2)', borderRadius:'var(--radius)', padding:'10px 12px' }}>
-          <div style={{ fontSize:7, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:8 }}>Macro context</div>
+          <div style={{ fontSize:9, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:8 }}>Macro context</div>
           {/* Regime headline */}
           <div style={{ background:rc.bg, border:`0.5px solid ${rc.border}`, borderRadius:'var(--rs)', padding:'8px 10px', marginBottom:8 }}>
-            <div style={{ fontSize:11, fontWeight:500, color:rc.col, marginBottom:3 }}>{rn.headline}</div>
-            <div style={{ fontSize:9, color:'var(--t2)', lineHeight:1.5 }}>{rn.sub}</div>
+            <div style={{ fontSize:13, fontWeight:500, color:rc.col, marginBottom:3 }}>{rn.headline}</div>
+            <div style={{ fontSize:11, color:'var(--t2)', lineHeight:1.5 }}>{rn.sub}</div>
           </div>
           {/* Key macro indicators — focused on portfolio-relevant signals */}
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:5 }}>
@@ -522,13 +523,13 @@ export default function PabloOS() {
               const col = change !== undefined ? (up ? '#00c873' : '#ff3d5a') : 'var(--t3)'
               return (
                 <div key={item.sym} style={{ background:'var(--s3)', borderRadius:'var(--rs)', padding:'6px 8px', border:'0.5px solid var(--b1)' }}>
-                  <div style={{ fontSize:7, color:'var(--t3)', marginBottom:1, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{item.label}</div>
-                  <div style={{ fontSize:9, fontWeight:600, color:'var(--t2)' }}>{item.sym}</div>
+                  <div style={{ fontSize:9, color:'var(--t3)', marginBottom:1, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{item.label}</div>
+                  <div style={{ fontSize:11, fontWeight:600, color:'var(--t2)' }}>{item.sym}</div>
                   {change !== undefined
-                    ? <div style={{ fontSize:10, fontWeight:500, color:col }}>{up?'▲':'▼'} {chgFmt(change)}</div>
-                    : <div style={{ fontSize:9, color:'var(--t3)' }}>—</div>
+                    ? <div style={{ fontSize:12, fontWeight:500, color:col }}>{up?'▲':'▼'} {chgFmt(change)}</div>
+                    : <div style={{ fontSize:11, color:'var(--t3)' }}>—</div>
                   }
-                  {price && <div style={{ fontSize:8, color:'var(--t3)' }}>${price < 100 ? price.toFixed(2) : Math.round(price).toLocaleString()}</div>}
+                  {price && <div style={{ fontSize:10, color:'var(--t3)' }}>${price < 100 ? price.toFixed(2) : Math.round(price).toLocaleString()}</div>}
                 </div>
               )
             })}
@@ -537,10 +538,10 @@ export default function PabloOS() {
 
         {/* WORLD INTELLIGENCE */}
         <div style={{ background:'var(--s2)', border:'0.5px solid var(--b2)', borderRadius:'var(--radius)', padding:'10px 12px', flex:1, overflow:'auto' }}>
-          <div style={{ fontSize:7, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:8, display:'flex', alignItems:'center', gap:5 }}>
-            <i className="ti ti-world" style={{ fontSize:9 }} />World intelligence
-            {worldNews?.status === 'live' && <span style={{ fontSize:7, color:'#00c873', marginLeft:4 }}>● live</span>}
-            {worldNews?.status === 'cached' && <span style={{ fontSize:7, color:'#f09020', marginLeft:4 }}>● cached</span>}
+          <div style={{ fontSize:9, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:8, display:'flex', alignItems:'center', gap:5 }}>
+            <i className="ti ti-world" style={{ fontSize:11 }} />World intelligence
+            {worldNews?.status === 'live' && <span style={{ fontSize:9, color:'#00c873', marginLeft:4 }}>● live</span>}
+            {worldNews?.status === 'cached' && <span style={{ fontSize:9, color:'#f09020', marginLeft:4 }}>● cached</span>}
             <button className="ca" style={{ marginLeft:'auto' }} onClick={loadWorldNews}><i className="ti ti-refresh" /></button>
           </div>
           {worldNews?.articles?.length ? worldNews.articles.slice(0,6).map((a:any, i:number) => {
@@ -548,11 +549,11 @@ export default function PabloOS() {
             const col = a.label === 'geo' ? '#ff3d5a' : a.label === 'macro' ? '#4080ff' : a.label === 'tech' ? '#8868ff' : 'var(--t2)'
             return (
               <div key={i} style={{ display:'flex', gap:7, alignItems:'flex-start', padding:'5px 0', borderBottom:'0.5px solid var(--b1)' }}>
-                <div style={{ fontSize:7, fontWeight:700, color:'var(--t3)', textTransform:'uppercase', minWidth:26, paddingTop:1, flexShrink:0 }}>{(a.source||'').slice(0,5)}</div>
+                <div style={{ fontSize:9, fontWeight:700, color:'var(--t3)', textTransform:'uppercase', minWidth:26, paddingTop:1, flexShrink:0 }}>{(a.source||'').slice(0,5)}</div>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:10, color:'var(--t1)', lineHeight:1.4, overflow:'hidden', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as any }}>{a.title}</div>
-                  {why && <div style={{ fontSize:8, color:'var(--t2)', marginTop:2, fontStyle:'italic' }}>{why}</div>}
-                  <a href={a.url} target="_blank" rel="noopener" style={{ fontSize:7, color:'#4080ff', opacity:.5 }}>Read →</a>
+                  <div style={{ fontSize:12, color:'var(--t1)', lineHeight:1.4, overflow:'hidden', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as any }}>{a.title}</div>
+                  {why && <div style={{ fontSize:10, color:'var(--t2)', marginTop:2, fontStyle:'italic' }}>{why}</div>}
+                  <a href={a.url} target="_blank" rel="noopener" style={{ fontSize:9, color:'#4080ff', opacity:.5 }}>Read →</a>
                 </div>
                 <span style={{ ...tagSty(col), marginTop:1 }}>{a.label||'intel'}</span>
               </div>
@@ -570,16 +571,16 @@ export default function PabloOS() {
                 const col = a.label === 'geo' ? '#ff3d5a' : a.label === 'macro' ? '#4080ff' : '#8868ff'
                 return (
                   <div key={i} style={{ display:'flex', gap:7, alignItems:'flex-start', padding:'5px 0', borderBottom:'0.5px solid var(--b1)' }}>
-                    <div style={{ fontSize:7, fontWeight:700, color:'var(--t3)', textTransform:'uppercase', minWidth:26, paddingTop:1, flexShrink:0 }}>{a.src}</div>
+                    <div style={{ fontSize:9, fontWeight:700, color:'var(--t3)', textTransform:'uppercase', minWidth:26, paddingTop:1, flexShrink:0 }}>{a.src}</div>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:10, color:'var(--t1)', lineHeight:1.4 }}>{a.title}</div>
-                      <div style={{ fontSize:8, color:'var(--t2)', marginTop:2, fontStyle:'italic' }}>{a.why}</div>
+                      <div style={{ fontSize:12, color:'var(--t1)', lineHeight:1.4 }}>{a.title}</div>
+                      <div style={{ fontSize:10, color:'var(--t2)', marginTop:2, fontStyle:'italic' }}>{a.why}</div>
                     </div>
                     <span style={{ ...tagSty(col), marginTop:1 }}>{a.label}</span>
                   </div>
                 )
               })}
-              <div style={{ fontSize:7, color:'var(--t3)', marginTop:6, fontStyle:'italic', display:'flex', alignItems:'center', gap:4 }}>
+              <div style={{ fontSize:9, color:'var(--t3)', marginTop:6, fontStyle:'italic', display:'flex', alignItems:'center', gap:4 }}>
                 <div style={{ width:4, height:4, borderRadius:'50%', background: worldNews?.status === 'unavailable' ? '#ff3d5a' : '#f09020', animation: worldNews?.status !== 'unavailable' ? 'lp 2s infinite' : 'none' }} />
                 {worldNews?.status === 'unavailable' ? 'Live feed offline — showing baseline macro context' : worldNews?.status === 'cached' ? `Last confirmed ${new Date(worldNews?.cachedAt||'').toLocaleTimeString()}` : 'Live feed connecting — showing baseline context'}
               </div>
@@ -593,9 +594,9 @@ export default function PabloOS() {
 
         {/* PAYMENTS DUE */}
         <div style={{ background:'var(--s2)', border:'0.5px solid var(--b2)', borderRadius:'var(--radius)', padding:'9px 11px', flexShrink:0 }}>
-          <div style={{ fontSize:7, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.15em', marginBottom:7, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <div style={{ fontSize:9, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.15em', marginBottom:7, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
             Financial obligations
-            <button onClick={() => setShowPayForm(!showPayForm)} style={{ background:'none', border:'0.5px solid var(--b3)', color:'var(--t2)', borderRadius:'var(--rs)', padding:'1px 6px', fontSize:8, cursor:'pointer', fontFamily:'inherit' }}>+ Add</button>
+            <button onClick={() => setShowPayForm(!showPayForm)} style={{ background:'none', border:'0.5px solid var(--b3)', color:'var(--t2)', borderRadius:'var(--rs)', padding:'1px 6px', fontSize:10, cursor:'pointer', fontFamily:'inherit' }}>+ Add</button>
           </div>
           {payIntel.upcoming.length > 0 ? payIntel.upcoming.slice(0,5).map((p:any, i:number) => {
             const d = duDays(p.eff)
@@ -607,19 +608,19 @@ export default function PabloOS() {
               <div key={i} style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 0', borderBottom:'0.5px solid var(--b1)' }}>
                 <div style={{ width:5, height:5, borderRadius:'50%', background:col, flexShrink:0 }} />
                 <div style={{ flex:1 }}>
-                  <div style={{ fontSize:10, fontWeight:500, color:'var(--t1)' }}>{p.name}</div>
-                  <div style={{ fontSize:8, color:'var(--t3)' }}>{dtLabel}{d === 0 ? ' · today' : d === 1 ? ' · tomorrow' : ` · in ${d}d`}</div>
+                  <div style={{ fontSize:12, fontWeight:500, color:'var(--t1)' }}>{p.name}</div>
+                  <div style={{ fontSize:10, color:'var(--t3)' }}>{dtLabel}{d === 0 ? ' · today' : d === 1 ? ' · tomorrow' : ` · in ${d}d`}</div>
                 </div>
-                <div style={{ fontSize:10, fontWeight:600, color:col }}>{p.amount||'—'}</div>
-                <button onClick={() => savePays(payments.filter((_,idx)=>idx!==p.i))} style={{ background:'none', border:'none', color:'var(--t4)', fontSize:9, padding:0 }}><i className="ti ti-x" /></button>
+                <div style={{ fontSize:12, fontWeight:600, color:col }}>{p.amount||'—'}</div>
+                <button onClick={() => savePays(payments.filter((_,idx)=>idx!==p._idx))} style={{ background:'none', border:'none', color:'var(--r)', fontSize:14, padding:'2px 4px', opacity:.5 }}><i className="ti ti-x" /></button>
               </div>
             )
-          }) : <div style={{ fontSize:9, color:'var(--t3)', fontStyle:'italic' }}>No obligations tracked yet</div>}
+          }) : <div style={{ fontSize:11, color:'var(--t3)', fontStyle:'italic' }}>No obligations tracked yet</div>}
           {payIntel.upcoming.length > 0 && payIntel.income > 0 && (
             <div style={{ marginTop:7, paddingTop:7, borderTop:'0.5px solid var(--b2)' }}>
-              <div style={{ fontSize:8, color:'var(--t3)', marginBottom:2 }}>Projected free cash this month</div>
+              <div style={{ fontSize:10, color:'var(--t3)', marginBottom:2 }}>Projected free cash this month</div>
               <div style={{ fontSize:14, fontWeight:300, color: payIntel.free > 0 ? '#00c873' : '#ff3d5a' }}>{fmt(payIntel.free)}</div>
-              <div style={{ fontSize:7, color:'var(--t3)', marginTop:1 }}>after income – expenses – obligations</div>
+              <div style={{ fontSize:9, color:'var(--t3)', marginTop:1 }}>after income – expenses – obligations</div>
             </div>
           )}
           {showPayForm && (
@@ -629,7 +630,7 @@ export default function PabloOS() {
 
         {/* MARKET INTELLIGENCE */}
         <div style={{ background:'var(--s2)', border:'0.5px solid var(--b2)', borderRadius:'var(--radius)', padding:'9px 11px', flexShrink:0 }}>
-          <div style={{ fontSize:7, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.15em', marginBottom:7, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <div style={{ fontSize:9, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.15em', marginBottom:7, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
             Market intelligence<button className="sw-ca" onClick={loadMktNews}><i className="ti ti-refresh" /></button>
           </div>
           {mktNews?.articles?.slice(0,4).map((a:any, i:number) => {
@@ -637,18 +638,18 @@ export default function PabloOS() {
             return (
               <div key={i} style={{ padding:'5px 0', borderBottom:'0.5px solid var(--b1)' }}>
                 <div style={{ display:'flex', alignItems:'flex-start', gap:5, marginBottom:2 }}>
-                  <div style={{ flex:1, fontSize:9, color:'var(--t1)', lineHeight:1.4, overflow:'hidden', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as any }}>{a.title}</div>
+                  <div style={{ flex:1, fontSize:11, color:'var(--t1)', lineHeight:1.4, overflow:'hidden', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as any }}>{a.title}</div>
                   <span style={{ ...tagSty(col) }}>{a.sentiment||'neu'}</span>
                 </div>
-                {a.context && <div style={{ fontSize:8, color:'var(--t2)', fontStyle:'italic', lineHeight:1.3 }}>{a.context}</div>}
+                {a.context && <div style={{ fontSize:10, color:'var(--t2)', fontStyle:'italic', lineHeight:1.3 }}>{a.context}</div>}
               </div>
             )
-          }) || <div style={{ fontSize:9, color:'var(--t3)', fontStyle:'italic' }}>Loading market intelligence...</div>}
+          }) || <div style={{ fontSize:11, color:'var(--t3)', fontStyle:'italic' }}>Loading market intelligence...</div>}
         </div>
 
         {/* PORTFOLIO SNAPSHOT */}
         <div style={{ background:'var(--s2)', border:'0.5px solid var(--b2)', borderRadius:'var(--radius)', padding:'9px 11px', flexShrink:0 }}>
-          <div style={{ fontSize:7, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.15em', marginBottom:6, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <div style={{ fontSize:9, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.15em', marginBottom:6, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
             Portfolio<button className="sw-ca" onClick={loadPortfolio}><i className="ti ti-refresh" /></button>
           </div>
           {portTotal && <div style={{ fontSize:16, fontWeight:300, color:'var(--t1)', marginBottom:6 }}>{fmt(portTotal)}</div>}
@@ -657,35 +658,35 @@ export default function PabloOS() {
             const col = r?.price ? (r.up ? '#00c873' : '#ff3d5a') : 'var(--t3)'
             return (
               <div key={p.t} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'3px 0', borderBottom:'0.5px solid var(--b1)' }}>
-                <span style={{ fontSize:8, fontWeight:600, color:'var(--t2)' }}>{p.t}</span>
-                <span style={{ fontSize:9, fontWeight:500, color:col, fontVariantNumeric:'tabular-nums' }}>{r?.price ? chgFmt(r.change) : '—'}</span>
+                <span style={{ fontSize:10, fontWeight:600, color:'var(--t2)' }}>{p.t}</span>
+                <span style={{ fontSize:11, fontWeight:500, color:col, fontVariantNumeric:'tabular-nums' }}>{r?.price ? chgFmt(r.change) : '—'}</span>
               </div>
             )
-          }) : <div style={{ fontSize:9, color:'var(--t3)', fontStyle:'italic' }}>Portfolio data loading...</div>}
-          {portData?.status === 'cached' && <div style={{ fontSize:7, color:'var(--t3)', marginTop:4, fontStyle:'italic' }}>Confirmed {new Date(portData.cachedAt||'').toLocaleTimeString()}</div>}
+          }) : <div style={{ fontSize:11, color:'var(--t3)', fontStyle:'italic' }}>Portfolio data loading...</div>}
+          {portData?.status === 'cached' && <div style={{ fontSize:9, color:'var(--t3)', marginTop:4, fontStyle:'italic' }}>Confirmed {new Date(portData.cachedAt||'').toLocaleTimeString()}</div>}
         </div>
 
         {/* WEATHER */}
         <div style={{ background:'var(--s2)', border:'0.5px solid var(--b2)', borderRadius:'var(--radius)', padding:'9px 11px', flexShrink:0 }}>
-          <div style={{ fontSize:7, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.15em', marginBottom:6 }}>Weather · MTY</div>
+          <div style={{ fontSize:9, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.15em', marginBottom:6 }}>Weather · MTY</div>
           {weather ? (
             <>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
                 <div style={{ fontSize:20, fontWeight:300 }}>{Math.round(weather.current.temperature_2m)}°F</div>
-                <div><div style={{ fontSize:10, color:'var(--t1)' }}>{WX_LABELS[weather.current.weathercode]||'Clear'}</div><div style={{ fontSize:7, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.08em' }}>Monterrey, NL</div></div>
+                <div><div style={{ fontSize:12, color:'var(--t1)' }}>{WX_LABELS[weather.current.weathercode]||'Clear'}</div><div style={{ fontSize:9, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.08em' }}>Monterrey, NL</div></div>
               </div>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:2, paddingTop:5, borderTop:'0.5px solid var(--b1)' }}>
                 {weather.daily.time.map((t:string, i:number) => (
                   <div key={i} style={{ textAlign:'center' }}>
-                    <div style={{ fontSize:7, color:'var(--t3)' }}>{['Su','Mo','Tu','We','Th','Fr','Sa'][new Date(t+'T12:00:00').getDay()]}</div>
-                    <div style={{ fontSize:11 }}>{WX_ICONS[weather.daily.weathercode[i]]||'🌡'}</div>
-                    <div style={{ fontSize:9, fontWeight:500, color:'var(--t1)' }}>{Math.round(weather.daily.temperature_2m_max[i])}°</div>
-                    <div style={{ fontSize:7, color:'#4080ff' }}>{weather.daily.precipitation_probability_max[i]}%</div>
+                    <div style={{ fontSize:9, color:'var(--t3)' }}>{['Su','Mo','Tu','We','Th','Fr','Sa'][new Date(t+'T12:00:00').getDay()]}</div>
+                    <div style={{ fontSize:13 }}>{WX_ICONS[weather.daily.weathercode[i]]||'🌡'}</div>
+                    <div style={{ fontSize:11, fontWeight:500, color:'var(--t1)' }}>{Math.round(weather.daily.temperature_2m_max[i])}°</div>
+                    <div style={{ fontSize:9, color:'#4080ff' }}>{weather.daily.precipitation_probability_max[i]}%</div>
                   </div>
                 ))}
               </div>
             </>
-          ) : <div style={{ fontSize:9, color:'var(--t3)', fontStyle:'italic' }}>Weather loading...</div>}
+          ) : <div style={{ fontSize:11, color:'var(--t3)', fontStyle:'italic' }}>Weather loading...</div>}
         </div>
 
       </div>
@@ -693,22 +694,22 @@ export default function PabloOS() {
       {/* BOTTOM — WEEK AHEAD + MARKET MOVERS combined full width */}
       <div style={{ gridColumn:'1/3', background:'var(--s2)', border:'0.5px solid var(--b2)', borderRadius:'var(--radius)', padding:'10px 12px', overflow:'hidden', display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
         <div style={{ overflow:'auto' }}>
-          <div style={{ fontSize:7, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:7, display:'flex', alignItems:'center', gap:5 }}>
-            <i className="ti ti-calendar-week" style={{ fontSize:9 }} />Week ahead
+          <div style={{ fontSize:9, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:7, display:'flex', alignItems:'center', gap:5 }}>
+            <i className="ti ti-calendar-week" style={{ fontSize:11 }} />Week ahead
           </div>
           {calIntel?.weekEvs?.length ? calIntel.weekEvs.slice(0,5).map((ev:any, i:number) => (
             <div key={i} style={{ display:'flex', gap:6, alignItems:'flex-start', padding:'4px 0', borderBottom:'0.5px solid var(--b1)' }}>
               <div style={{ width:2, background:'#4080ff60', borderRadius:2, minHeight:18, flexShrink:0, marginTop:2 }} />
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:10, fontWeight:500, color:'var(--t1)', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{ev.summary}</div>
-                <div style={{ fontSize:8, color:'var(--t3)' }}>{fmtDate(ev.start)} · {ev.allDay ? 'All day' : fmtTime(ev.start)}</div>
+                <div style={{ fontSize:12, fontWeight:500, color:'var(--t1)', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{ev.summary}</div>
+                <div style={{ fontSize:10, color:'var(--t3)' }}>{fmtDate(ev.start)} · {ev.allDay ? 'All day' : fmtTime(ev.start)}</div>
               </div>
             </div>
-          )) : <div style={{ fontSize:9, color:'var(--t3)', fontStyle:'italic' }}>{calIntel ? 'No upcoming events this week' : calendar?.status === 'setup_required' ? 'Enable public access in Google Calendar settings' : 'Calendar loading...'}</div>}
+          )) : <div style={{ fontSize:11, color:'var(--t3)', fontStyle:'italic' }}>{calIntel ? 'No upcoming events this week' : calendar?.status === 'setup_required' ? 'Enable public access in Google Calendar settings' : 'Calendar loading...'}</div>}
         </div>
         <div>
-          <div style={{ fontSize:7, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:7, display:'flex', alignItems:'center', gap:5 }}>
-            <i className="ti ti-chart-line" style={{ fontSize:9 }} />Market movers<button className="ca" style={{ marginLeft:'auto' }} onClick={loadMarket}><i className="ti ti-refresh" /></button>
+          <div style={{ fontSize:9, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:7, display:'flex', alignItems:'center', gap:5 }}>
+            <i className="ti ti-chart-line" style={{ fontSize:11 }} />Market movers<button className="ca" style={{ marginLeft:'auto' }} onClick={loadMarket}><i className="ti ti-refresh" /></button>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:4 }}>
             {['SPY','QQQ','NVDA','IONQ','SOXX','PLTR','TSLA','AMD'].map(sym => {
@@ -716,13 +717,13 @@ export default function PabloOS() {
               const col = r?.price ? (r.up ? '#00c873' : '#ff3d5a') : 'var(--t3)'
               return (
                 <div key={sym} style={{ background:'var(--s3)', borderRadius:'var(--rs)', padding:'5px 7px', border:'0.5px solid var(--b1)' }}>
-                  <div style={{ fontSize:8, fontWeight:600, color:'var(--t2)' }}>{sym}</div>
-                  {r?.price ? <><div style={{ fontSize:10, fontWeight:500, color:col }}>{r.up?'▲':'▼'} {chgFmt(r.change)}</div><div style={{ fontSize:8, color:'var(--t3)' }}>${r.price<100?r.price.toFixed(2):Math.round(r.price).toLocaleString()}</div></> : <div style={{ fontSize:9, color:'var(--t3)' }}>—</div>}
+                  <div style={{ fontSize:10, fontWeight:600, color:'var(--t2)' }}>{sym}</div>
+                  {r?.price ? <><div style={{ fontSize:12, fontWeight:500, color:col }}>{r.up?'▲':'▼'} {chgFmt(r.change)}</div><div style={{ fontSize:10, color:'var(--t3)' }}>${r.price<100?r.price.toFixed(2):Math.round(r.price).toLocaleString()}</div></> : <div style={{ fontSize:11, color:'var(--t3)' }}>—</div>}
                 </div>
               )
             })}
           </div>
-          {marketData?.status === 'cached' && <div style={{ fontSize:7, color:'var(--t3)', marginTop:5, fontStyle:'italic' }}>Last confirmed {new Date(marketData.cachedAt||'').toLocaleTimeString()}</div>}
+          {marketData?.status === 'cached' && <div style={{ fontSize:9, color:'var(--t3)', marginTop:5, fontStyle:'italic' }}>Last confirmed {new Date(marketData.cachedAt||'').toLocaleTimeString()}</div>}
         </div>
       </div>
     </div>
@@ -785,7 +786,7 @@ export default function PabloOS() {
         <div className="tb-r">
           <div className="ldot" />
           <div className="rpill" style={{color:rc.col,background:rc.bg,borderColor:rc.border}}>{rc.label}</div>
-          <div style={{fontSize:7,color:'var(--t3)'}}>{weather?`MTY ${Math.round(weather.current.temperature_2m)}°F`:'MTY --°F'}</div>
+          <div style={{fontSize:9,color:'var(--t3)'}}>{weather?`MTY ${Math.round(weather.current.temperature_2m)}°F`:'MTY --°F'}</div>
         </div>
       </div>
 
@@ -809,11 +810,11 @@ export default function PabloOS() {
           {/* MARKETS */}
           {page === 'mkt' && (
             <div className="page on" style={{padding:8}}>
-              <div style={{fontSize:7,fontWeight:600,color:'var(--t3)',textTransform:'uppercase',letterSpacing:'.17em',marginBottom:8}}>Market movers — contextual view</div>
+              <div style={{fontSize:9,fontWeight:600,color:'var(--t3)',textTransform:'uppercase',letterSpacing:'.17em',marginBottom:8}}>Market movers — contextual view</div>
               {/* Regime context first */}
               <div style={{background:rc.bg,border:`0.5px solid ${rc.border}`,borderRadius:'var(--radius)',padding:'10px 12px',marginBottom:8}}>
-                <div style={{fontSize:12,fontWeight:500,color:rc.col,marginBottom:3}}>{rn.headline}</div>
-                <div style={{fontSize:9,color:'var(--t2)',lineHeight:1.5}}>{rn.sub}</div>
+                <div style={{fontSize:13,fontWeight:500,color:rc.col,marginBottom:3}}>{rn.headline}</div>
+                <div style={{fontSize:11,color:'var(--t2)',lineHeight:1.5}}>{rn.sub}</div>
               </div>
               <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:5,marginBottom:8}}>
                 {['SPY','QQQ','NVDA','IONQ','SOXX','PLTR','RGTI','TSLA','AMD','MSTR','MU','MCHP'].map(sym => {
@@ -821,23 +822,23 @@ export default function PabloOS() {
                   const col = r?.price ? (r.up ? '#00c873' : '#ff3d5a') : 'var(--t3)'
                   return (
                     <div key={sym} style={{background:'var(--s3)',borderRadius:'var(--rs)',padding:'7px 9px',border:'0.5px solid var(--b2)'}}>
-                      <div style={{fontSize:8,fontWeight:600,color:'var(--t2)',marginBottom:2}}>{sym}</div>
+                      <div style={{fontSize:10,fontWeight:600,color:'var(--t2)',marginBottom:2}}>{sym}</div>
                       {r?.price
-                        ? <><div style={{fontSize:11,fontWeight:500,color:col}}>{r.up?'▲':'▼'} {chgFmt(r.change)}</div><div style={{fontSize:8,color:'var(--t3)'}}>${r.price<100?r.price.toFixed(2):Math.round(r.price).toLocaleString()}</div></>
-                        : <div style={{fontSize:9,color:'var(--t3)'}}>—</div>
+                        ? <><div style={{fontSize:13,fontWeight:500,color:col}}>{r.up?'▲':'▼'} {chgFmt(r.change)}</div><div style={{fontSize:10,color:'var(--t3)'}}>${r.price<100?r.price.toFixed(2):Math.round(r.price).toLocaleString()}</div></>
+                        : <div style={{fontSize:11,color:'var(--t3)'}}>—</div>
                       }
                     </div>
                   )
                 })}
               </div>
-              {marketData?.status !== 'live' && <div style={{fontSize:8,color:'var(--t3)',fontStyle:'italic'}}>{marketData?.status === 'cached' ? `Using confirmed market structure from ${new Date(marketData.cachedAt||'').toLocaleTimeString()} · live feed reconnecting` : 'Live market data temporarily unavailable'}</div>}
+              {marketData?.status !== 'live' && <div style={{fontSize:10,color:'var(--t3)',fontStyle:'italic'}}>{marketData?.status === 'cached' ? `Using confirmed market structure from ${new Date(marketData.cachedAt||'').toLocaleTimeString()} · live feed reconnecting` : 'Live market data temporarily unavailable'}</div>}
             </div>
           )}
 
           {/* PORTFOLIO */}
           {page === 'port' && (
             <div className="page on" style={{padding:8}}>
-              <div style={{fontSize:7,fontWeight:600,color:'var(--t3)',textTransform:'uppercase',letterSpacing:'.17em',marginBottom:8}}>Holdings</div>
+              <div style={{fontSize:9,fontWeight:600,color:'var(--t3)',textTransform:'uppercase',letterSpacing:'.17em',marginBottom:8}}>Holdings</div>
               <div style={{display:'grid',gridTemplateColumns:'repeat(9,1fr)',gap:4,marginBottom:8}}>
                 {POSITIONS.map(p => {
                   const r = portData?.data?.[p.t]
@@ -846,10 +847,10 @@ export default function PabloOS() {
                   return <div key={p.t} className={cls}><div className="pt-s">{p.t}</div><div className="pt-c" style={{color:col}}>{r?.price ? chgFmt(r.change) : '—'}</div><div className="pt-v">${Math.round(r?.price||p.v)}</div></div>
                 })}
               </div>
-              {portTotal && <div style={{fontSize:18,fontWeight:300,marginBottom:8}}>Total: {fmt(portTotal)} <span style={{fontSize:9,color:'var(--t3)'}}>9 positions · long-term</span></div>}
+              {portTotal && <div style={{fontSize:18,fontWeight:300,marginBottom:8}}>Total: {fmt(portTotal)} <span style={{fontSize:11,color:'var(--t3)'}}>9 positions · long-term</span></div>}
               <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:5}}>
                 {[['US equity','68%','#00c873'],['International','18%','#4080ff'],['Inflation hedge','5%','#f09020'],['Speculative','9%','#8868ff']].map(([l,v,c]) => (
-                  <div key={l} style={{background:'var(--s3)',borderRadius:'var(--rs)',padding:'8px 10px',border:'0.5px solid var(--b1)'}}><div style={{fontSize:7,color:'var(--t3)',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:3}}>{l}</div><div style={{fontSize:13,fontWeight:400,color:c as string}}>{v}</div><div style={{height:2,borderRadius:1,background:'var(--s4)',overflow:'hidden',marginTop:3}}><div style={{height:'100%',width:v as string,background:c as string,borderRadius:1}}/></div></div>
+                  <div key={l} style={{background:'var(--s3)',borderRadius:'var(--rs)',padding:'8px 10px',border:'0.5px solid var(--b1)'}}><div style={{fontSize:9,color:'var(--t3)',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:3}}>{l}</div><div style={{fontSize:13,fontWeight:400,color:c as string}}>{v}</div><div style={{height:2,borderRadius:1,background:'var(--s4)',overflow:'hidden',marginTop:3}}><div style={{height:'100%',width:v as string,background:c as string,borderRadius:1}}/></div></div>
                 ))}
               </div>
             </div>
@@ -863,13 +864,13 @@ export default function PabloOS() {
                   {mktNews?.articles?.map((a:any,i:number) => (
                     <div key={i} style={{padding:'6px 0',borderBottom:'0.5px solid var(--b1)'}}>
                       <div style={{display:'flex',gap:6,alignItems:'flex-start',marginBottom:2}}>
-                        <div style={{fontSize:7,fontWeight:700,color:'var(--t3)',textTransform:'uppercase',minWidth:26,flexShrink:0}}>{(a.source||'').slice(0,5)}</div>
-                        <div style={{fontSize:10,color:'var(--t1)',lineHeight:1.4,flex:1}}>{a.title}</div>
+                        <div style={{fontSize:9,fontWeight:700,color:'var(--t3)',textTransform:'uppercase',minWidth:26,flexShrink:0}}>{(a.source||'').slice(0,5)}</div>
+                        <div style={{fontSize:12,color:'var(--t1)',lineHeight:1.4,flex:1}}>{a.title}</div>
                         <span style={{...tagSty(a.sentiment==='bullish'?'#00c873':a.sentiment==='bearish'?'#ff3d5a':'var(--t3)')}}>{a.sentiment||'neu'}</span>
                       </div>
-                      {a.context && <div style={{fontSize:8,color:'var(--t2)',fontStyle:'italic',lineHeight:1.3,paddingLeft:32}}>{a.context}</div>}
+                      {a.context && <div style={{fontSize:10,color:'var(--t2)',fontStyle:'italic',lineHeight:1.3,paddingLeft:32}}>{a.context}</div>}
                     </div>
-                  ))||<div style={{fontSize:9,color:'var(--t3)',fontStyle:'italic'}}>Loading...</div>}
+                  ))||<div style={{fontSize:11,color:'var(--t3)',fontStyle:'italic'}}>Loading...</div>}
                 </div>
                 <div className="card"><div className="ch"><span className="ch-t">World intelligence</span><button className="ca" onClick={loadWorldNews}><i className="ti ti-refresh" /></button></div>
                   {worldNews?.articles?.map((a:any,i:number) => {
@@ -878,15 +879,15 @@ export default function PabloOS() {
                     return (
                       <div key={i} style={{padding:'6px 0',borderBottom:'0.5px solid var(--b1)'}}>
                         <div style={{display:'flex',gap:6,alignItems:'flex-start',marginBottom:2}}>
-                          <div style={{fontSize:7,fontWeight:700,color:'var(--t3)',textTransform:'uppercase',minWidth:26,flexShrink:0}}>{(a.source||'').slice(0,5)}</div>
-                          <div style={{fontSize:10,color:'var(--t1)',lineHeight:1.4,flex:1}}>{a.title}</div>
+                          <div style={{fontSize:9,fontWeight:700,color:'var(--t3)',textTransform:'uppercase',minWidth:26,flexShrink:0}}>{(a.source||'').slice(0,5)}</div>
+                          <div style={{fontSize:12,color:'var(--t1)',lineHeight:1.4,flex:1}}>{a.title}</div>
                           <span style={{...tagSty(col)}}>{a.label||'intel'}</span>
                         </div>
-                        {why && <div style={{fontSize:8,color:'var(--t2)',fontStyle:'italic',lineHeight:1.3,paddingLeft:32}}>{why}</div>}
-                        <a href={a.url} target="_blank" rel="noopener" style={{fontSize:7,color:'#4080ff',opacity:.5,paddingLeft:32,display:'block'}}>Read →</a>
+                        {why && <div style={{fontSize:10,color:'var(--t2)',fontStyle:'italic',lineHeight:1.3,paddingLeft:32}}>{why}</div>}
+                        <a href={a.url} target="_blank" rel="noopener" style={{fontSize:9,color:'#4080ff',opacity:.5,paddingLeft:32,display:'block'}}>Read →</a>
                       </div>
                     )
-                  })||<div style={{fontSize:9,color:'var(--t3)',fontStyle:'italic'}}>Loading...</div>}
+                  })||<div style={{fontSize:11,color:'var(--t3)',fontStyle:'italic'}}>Loading...</div>}
                 </div>
               </div>
             </div>
@@ -902,10 +903,10 @@ export default function PabloOS() {
                     <div>
                       {calIntel.next && (
                         <div style={{background:rc.bg,border:`0.5px solid ${rc.border}`,borderRadius:'var(--rs)',padding:'8px 10px',marginBottom:8}}>
-                          <div style={{fontSize:7,color:'var(--t3)',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:2}}>Next</div>
-                          <div style={{fontSize:12,fontWeight:500,color:'var(--t1)',marginBottom:2}}>{calIntel.next.summary}</div>
-                          <div style={{fontSize:9,color:'var(--t2)'}}>{countdown(calIntel.next.start)}{calIntel.next.location?' · '+calIntel.next.location:''}</div>
-                          <div style={{fontSize:7,color:'var(--t3)',marginTop:5,paddingTop:5,borderTop:'0.5px solid var(--b1)'}}>{calIntel.remainingToday} remaining · {calIntel.summary}</div>
+                          <div style={{fontSize:9,color:'var(--t3)',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:2}}>Next</div>
+                          <div style={{fontSize:13,fontWeight:500,color:'var(--t1)',marginBottom:2}}>{calIntel.next.summary}</div>
+                          <div style={{fontSize:11,color:'var(--t2)'}}>{countdown(calIntel.next.start)}{calIntel.next.location?' · '+calIntel.next.location:''}</div>
+                          <div style={{fontSize:9,color:'var(--t3)',marginTop:5,paddingTop:5,borderTop:'0.5px solid var(--b1)'}}>{calIntel.remainingToday} remaining · {calIntel.summary}</div>
                         </div>
                       )}
                       {calIntel.allFuture.slice(0,10).map((ev:any,i:number) => {
@@ -914,15 +915,15 @@ export default function PabloOS() {
                           <div key={i} style={{display:'flex',gap:7,alignItems:'flex-start',padding:'5px 0',borderBottom:'0.5px solid var(--b1)'}}>
                             <div style={{width:2,background:isT?rc.col:'#4080ff',borderRadius:2,minHeight:20,flexShrink:0,marginTop:2}} />
                             <div style={{flex:1}}>
-                              <div style={{fontSize:10,fontWeight:500,color:'var(--t1)'}}>{ev.summary}</div>
-                              <div style={{fontSize:8,color:'var(--t3)'}}>{ev.allDay?'All day':fmtTime(ev.start)}{ev.location?' · '+ev.location:''}</div>
+                              <div style={{fontSize:12,fontWeight:500,color:'var(--t1)'}}>{ev.summary}</div>
+                              <div style={{fontSize:10,color:'var(--t3)'}}>{ev.allDay?'All day':fmtTime(ev.start)}{ev.location?' · '+ev.location:''}</div>
                             </div>
-                            {isT ? <span style={{...tagSty('#00c873')}}>today</span> : <span style={{fontSize:7,color:'var(--t3)',whiteSpace:'nowrap'}}>{fmtDate(ev.start)}</span>}
+                            {isT ? <span style={{...tagSty('#00c873')}}>today</span> : <span style={{fontSize:9,color:'var(--t3)',whiteSpace:'nowrap'}}>{fmtDate(ev.start)}</span>}
                           </div>
                         )
                       })}
                     </div>
-                  ) : <div style={{fontSize:9,color:'var(--t3)',fontStyle:'italic'}}>{calendar?.status==='unavailable'?'Calendar feed offline':'Loading calendar...'}</div>}
+                  ) : <div style={{fontSize:11,color:'var(--t3)',fontStyle:'italic'}}>{calendar?.status==='unavailable'?'Calendar feed offline':'Loading calendar...'}</div>}
                 </div>
                 <div className="card">
                   <div className="ch"><span className="ch-t">Payments</span><button className="ca" onClick={()=>setShowPayForm(!showPayForm)}><i className="ti ti-plus" /></button></div>
@@ -932,23 +933,23 @@ export default function PabloOS() {
                     const dt = new Date(p.eff+'T00:00:00')
                     return (
                       <div key={i} style={{display:'flex',alignItems:'center',gap:6,padding:'6px 0',borderBottom:'0.5px solid var(--b1)'}}>
-                        <div style={{fontSize:8,color:'var(--t3)',minWidth:42}}>{months[dt.getMonth()]} {dt.getDate()}</div>
-                        <div style={{flex:1,fontSize:10,fontWeight:500,color:'var(--t1)'}}>{p.name}</div>
-                        <div style={{fontSize:11,fontWeight:600,color:col}}>{p.amount||'—'}</div>
-                        <button onClick={()=>savePays(payments.filter((_,idx)=>idx!==p.i))} style={{background:'none',border:'none',color:'var(--t4)',fontSize:9,padding:0}}><i className="ti ti-x" /></button>
+                        <div style={{fontSize:10,color:'var(--t3)',minWidth:42}}>{months[dt.getMonth()]} {dt.getDate()}</div>
+                        <div style={{flex:1,fontSize:12,fontWeight:500,color:'var(--t1)'}}>{p.name}</div>
+                        <div style={{fontSize:13,fontWeight:600,color:col}}>{p.amount||'—'}</div>
+                        <button onClick={()=>savePays(payments.filter((_,idx)=>idx!==p._idx))} style={{background:'none',border:'none',color:'var(--r)',fontSize:14,padding:'2px 4px',opacity:.5}}><i className="ti ti-x" /></button>
                       </div>
                     )
                   })}
                   {payIntel.income > 0 && (
                     <div style={{marginTop:8,paddingTop:8,borderTop:'0.5px solid var(--b2)'}}>
-                      <div style={{fontSize:8,color:'var(--t3)',marginBottom:3}}>Projected free cash</div>
+                      <div style={{fontSize:10,color:'var(--t3)',marginBottom:3}}>Projected free cash</div>
                       <div style={{fontSize:16,fontWeight:300,color:payIntel.free>0?'#00c873':'#ff3d5a'}}>{fmt(payIntel.free)}</div>
                     </div>
                   )}
                   {showPayForm && <PayForm onAdd={(p) => { savePays([...payments, p]); setShowPayForm(false) }} />}
                 </div>
               </div>
-              <div style={{fontSize:7,fontWeight:600,color:'var(--t4)',textTransform:'uppercase',letterSpacing:'.18em',marginBottom:6}}>Full calendar</div>
+              <div style={{fontSize:9,fontWeight:600,color:'var(--t4)',textTransform:'uppercase',letterSpacing:'.18em',marginBottom:6}}>Full calendar</div>
               <div className="card"><iframe src="https://calendar.google.com/calendar/embed?src=pablo%40dealground.com&ctz=America%2FTijuana&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=0&showCalendars=0&mode=WEEK&bgcolor=%2305050a&color=%2300c873" style={{width:'100%',height:360,border:'none',borderRadius:3}} title="Calendar" /></div>
             </div>
           )}
@@ -958,7 +959,7 @@ export default function PabloOS() {
             <div className="page on" style={{padding:8}}>
               <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:5,marginBottom:8}}>
                 {[['Income',finance.i||'—'],['Expenses',finance.e||'—'],['Portfolio',portTotal?fmt(portTotal):'--'],['Portfolio',portTotal?fmt(portTotal):'--']].map(([l,v]) => (
-                  <div key={l} style={{background:'var(--s3)',borderRadius:'var(--rs)',padding:'8px 10px',border:'0.5px solid var(--b1)'}}><div style={{fontSize:7,color:'var(--t3)',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:3}}>{l}</div><div style={{fontSize:15,fontWeight:300,color:'var(--t1)'}}>{v}</div></div>
+                  <div key={l} style={{background:'var(--s3)',borderRadius:'var(--rs)',padding:'8px 10px',border:'0.5px solid var(--b1)'}}><div style={{fontSize:9,color:'var(--t3)',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:3}}>{l}</div><div style={{fontSize:15,fontWeight:300,color:'var(--t1)'}}>{v}</div></div>
                 ))}
               </div>
               <div className="g2">
@@ -968,16 +969,16 @@ export default function PabloOS() {
                     <input placeholder="Monthly expenses" value={finance.e||''} onChange={e=>setFinance({...finance,e:e.target.value})} />
                                     <button className="fbtn" style={{gridColumn:'1/-1'}} onClick={()=>localStorage.setItem('pablo_fin',JSON.stringify(finance))}>Save</button>
                   </div>
-                  <div style={{fontSize:7,color:'var(--t3)',marginTop:5}}><i className="ti ti-lock" style={{fontSize:7,marginRight:2}} />Stored locally</div>
+                  <div style={{fontSize:9,color:'var(--t3)',marginTop:5}}><i className="ti ti-lock" style={{fontSize:9,marginRight:2}} />Stored locally</div>
                 </div>
                 <div className="card"><div className="ch"><span className="ch-t">Upcoming obligations</span><button className="ca" onClick={()=>setShowPayForm(!showPayForm)}><i className="ti ti-plus" /></button></div>
                   {payIntel.upcoming.map((p:any,i:number) => {
                     const d = duDays(p.eff); const col = urgentColor(d)
                     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
                     const dt = new Date(p.eff+'T00:00:00')
-                    return <div key={i} style={{display:'flex',alignItems:'center',gap:6,padding:'5px 0',borderBottom:'0.5px solid var(--b1)'}}><div style={{fontSize:8,color:'var(--t3)',minWidth:42}}>{months[dt.getMonth()]} {dt.getDate()}</div><div style={{flex:1,fontSize:10,fontWeight:500,color:'var(--t1)'}}>{p.name}</div><div style={{fontSize:11,fontWeight:600,color:col}}>{p.amount}</div><button onClick={()=>savePays(payments.filter((_,idx)=>idx!==p.i))} style={{background:'none',border:'none',color:'var(--t4)',fontSize:9,padding:0}}><i className="ti ti-x" /></button></div>
+                    return <div key={i} style={{display:'flex',alignItems:'center',gap:6,padding:'5px 0',borderBottom:'0.5px solid var(--b1)'}}><div style={{fontSize:10,color:'var(--t3)',minWidth:42}}>{months[dt.getMonth()]} {dt.getDate()}</div><div style={{flex:1,fontSize:12,fontWeight:500,color:'var(--t1)'}}>{p.name}</div><div style={{fontSize:13,fontWeight:600,color:col}}>{p.amount}</div><button onClick={()=>savePays(payments.filter((_,idx)=>idx!==p._idx))} style={{background:'none',border:'none',color:'var(--r)',fontSize:14,padding:'2px 4px',opacity:.5}}><i className="ti ti-x" /></button></div>
                   })}
-                  {payIntel.income > 0 && <div style={{marginTop:8,paddingTop:8,borderTop:'0.5px solid var(--b2)'}}><div style={{fontSize:8,color:'var(--t3)',marginBottom:2}}>Projected free cash</div><div style={{fontSize:16,fontWeight:300,color:payIntel.free>0?'#00c873':'#ff3d5a'}}>{fmt(payIntel.free)}</div></div>}
+                  {payIntel.income > 0 && <div style={{marginTop:8,paddingTop:8,borderTop:'0.5px solid var(--b2)'}}><div style={{fontSize:10,color:'var(--t3)',marginBottom:2}}>Projected free cash</div><div style={{fontSize:16,fontWeight:300,color:payIntel.free>0?'#00c873':'#ff3d5a'}}>{fmt(payIntel.free)}</div></div>}
                   {showPayForm && <PayForm onAdd={(p) => { savePays([...payments, p]); setShowPayForm(false) }} />}
                 </div>
               </div>
@@ -991,14 +992,14 @@ export default function PabloOS() {
                 <div className="card"><div className="ch"><span className="ch-t">World intelligence — high signal</span><button className="ca" onClick={loadWorldNews}><i className="ti ti-refresh" /></button></div>
                   {worldNews?.articles?.map((a:any,i:number) => {
                     const why = whyMatters(a.title); const col = a.label==='geo'?'#ff3d5a':a.label==='macro'?'#4080ff':'#8868ff'
-                    return <div key={i} style={{padding:'6px 0',borderBottom:'0.5px solid var(--b1)'}}><div style={{display:'flex',gap:6,alignItems:'flex-start',marginBottom:2}}><div style={{fontSize:7,fontWeight:700,color:'var(--t3)',textTransform:'uppercase',minWidth:26,flexShrink:0}}>{(a.source||'').slice(0,5)}</div><div style={{fontSize:10,color:'var(--t1)',lineHeight:1.4,flex:1}}>{a.title}</div><span style={{...tagSty(col)}}>{a.label||'intel'}</span></div>{why&&<div style={{fontSize:8,color:'var(--t2)',fontStyle:'italic',paddingLeft:32}}>{why}</div>}<a href={a.url} target="_blank" rel="noopener" style={{fontSize:7,color:'#4080ff',opacity:.5,paddingLeft:32,display:'block'}}>Read →</a></div>
-                  })||<div style={{fontSize:9,color:'var(--t3)',fontStyle:'italic'}}>Loading world intelligence...</div>}
+                    return <div key={i} style={{padding:'6px 0',borderBottom:'0.5px solid var(--b1)'}}><div style={{display:'flex',gap:6,alignItems:'flex-start',marginBottom:2}}><div style={{fontSize:9,fontWeight:700,color:'var(--t3)',textTransform:'uppercase',minWidth:26,flexShrink:0}}>{(a.source||'').slice(0,5)}</div><div style={{fontSize:12,color:'var(--t1)',lineHeight:1.4,flex:1}}>{a.title}</div><span style={{...tagSty(col)}}>{a.label||'intel'}</span></div>{why&&<div style={{fontSize:10,color:'var(--t2)',fontStyle:'italic',paddingLeft:32}}>{why}</div>}<a href={a.url} target="_blank" rel="noopener" style={{fontSize:9,color:'#4080ff',opacity:.5,paddingLeft:32,display:'block'}}>Read →</a></div>
+                  })||<div style={{fontSize:11,color:'var(--t3)',fontStyle:'italic'}}>Loading world intelligence...</div>}
                 </div>
                 <div className="card"><div className="ch"><span className="ch-t">Market intelligence</span><button className="ca" onClick={loadMktNews}><i className="ti ti-refresh" /></button></div>
                   {mktNews?.articles?.map((a:any,i:number) => {
                     const col = a.sentiment==='bullish'?'#00c873':a.sentiment==='bearish'?'#ff3d5a':'var(--t3)'
-                    return <div key={i} style={{padding:'6px 0',borderBottom:'0.5px solid var(--b1)'}}><div style={{display:'flex',gap:6,alignItems:'flex-start',marginBottom:2}}><div style={{fontSize:7,fontWeight:700,color:'var(--t3)',textTransform:'uppercase',minWidth:26,flexShrink:0}}>{(a.source||'').slice(0,5)}</div><div style={{fontSize:10,color:'var(--t1)',lineHeight:1.4,flex:1}}>{a.title}</div><span style={{...tagSty(col)}}>{a.sentiment||'neu'}</span></div>{a.context&&<div style={{fontSize:8,color:'var(--t2)',fontStyle:'italic',paddingLeft:32}}>{a.context}</div>}</div>
-                  })||<div style={{fontSize:9,color:'var(--t3)',fontStyle:'italic'}}>Loading...</div>}
+                    return <div key={i} style={{padding:'6px 0',borderBottom:'0.5px solid var(--b1)'}}><div style={{display:'flex',gap:6,alignItems:'flex-start',marginBottom:2}}><div style={{fontSize:9,fontWeight:700,color:'var(--t3)',textTransform:'uppercase',minWidth:26,flexShrink:0}}>{(a.source||'').slice(0,5)}</div><div style={{fontSize:12,color:'var(--t1)',lineHeight:1.4,flex:1}}>{a.title}</div><span style={{...tagSty(col)}}>{a.sentiment||'neu'}</span></div>{a.context&&<div style={{fontSize:10,color:'var(--t2)',fontStyle:'italic',paddingLeft:32}}>{a.context}</div>}</div>
+                  })||<div style={{fontSize:11,color:'var(--t3)',fontStyle:'italic'}}>Loading...</div>}
                 </div>
               </div>
             </div>
@@ -1007,13 +1008,13 @@ export default function PabloOS() {
           {/* LIFESTYLE */}
           {page === 'life' && (
             <div className="page on" style={{padding:8}}>
-              <div style={{fontSize:7,fontWeight:600,color:'var(--t4)',textTransform:'uppercase',letterSpacing:'.18em',marginBottom:6}}>Events & experiences</div>
+              <div style={{fontSize:9,fontWeight:600,color:'var(--t4)',textTransform:'uppercase',letterSpacing:'.18em',marginBottom:6}}>Events & experiences</div>
               <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:5,marginBottom:8}}>
-                {allEv.map((e,i) => <div key={i} style={{borderRadius:'var(--rs)',padding:'8px 10px',border:`0.5px solid ${e.c}25`,background:e.c+'10'}}><div style={{fontSize:7,fontWeight:600,textTransform:'uppercase',letterSpacing:'.08em',color:e.c,marginBottom:3}}>{e.tag}</div><div style={{fontSize:10,fontWeight:500,color:'var(--t1)',marginBottom:2}}>{e.name}</div><div style={{fontSize:8,color:'var(--t3)'}}>{e.date} · {e.loc}</div><span style={{...tagSty(e.fc as string),display:'inline-block',marginTop:4}}>{e.fomo}</span></div>)}
+                {allEv.map((e,i) => <div key={i} style={{borderRadius:'var(--rs)',padding:'8px 10px',border:`0.5px solid ${e.c}25`,background:e.c+'10'}}><div style={{fontSize:9,fontWeight:600,textTransform:'uppercase',letterSpacing:'.08em',color:e.c,marginBottom:3}}>{e.tag}</div><div style={{fontSize:12,fontWeight:500,color:'var(--t1)',marginBottom:2}}>{e.name}</div><div style={{fontSize:10,color:'var(--t3)'}}>{e.date} · {e.loc}</div><span style={{...tagSty(e.fc as string),display:'inline-block',marginTop:4}}>{e.fomo}</span></div>)}
               </div>
-              <div style={{fontSize:7,fontWeight:600,color:'var(--t4)',textTransform:'uppercase',letterSpacing:'.18em',marginBottom:6}}>Niche experiences</div>
+              <div style={{fontSize:9,fontWeight:600,color:'var(--t4)',textTransform:'uppercase',letterSpacing:'.18em',marginBottom:6}}>Niche experiences</div>
               <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:5}}>
-                {allXP.map((x,i) => <div key={i} style={{borderRadius:'var(--rs)',padding:'8px 10px',border:'0.5px solid var(--b2)',background:'var(--s2)'}}><div style={{fontSize:7,fontWeight:600,textTransform:'uppercase',letterSpacing:'.08em',color:x.tc,marginBottom:2}}>{x.tag}</div><div style={{fontSize:10,fontWeight:500,color:'var(--t1)',marginBottom:2}}>{x.name}</div><div style={{fontSize:7,color:'var(--t3)',marginBottom:2}}>{x.loc}</div><div style={{fontSize:8,color:'var(--t2)',lineHeight:1.4}}>{x.why}</div></div>)}
+                {allXP.map((x,i) => <div key={i} style={{borderRadius:'var(--rs)',padding:'8px 10px',border:'0.5px solid var(--b2)',background:'var(--s2)'}}><div style={{fontSize:9,fontWeight:600,textTransform:'uppercase',letterSpacing:'.08em',color:x.tc,marginBottom:2}}>{x.tag}</div><div style={{fontSize:12,fontWeight:500,color:'var(--t1)',marginBottom:2}}>{x.name}</div><div style={{fontSize:9,color:'var(--t3)',marginBottom:2}}>{x.loc}</div><div style={{fontSize:10,color:'var(--t2)',lineHeight:1.4}}>{x.why}</div></div>)}
               </div>
             </div>
           )}
