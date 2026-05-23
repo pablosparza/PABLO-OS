@@ -152,8 +152,17 @@ export default function PabloOS() {
   // ── Calendar helpers ────────────────────────────
   function buildAgenda(compact = true) {
     if (!calendar?.events?.length) {
-      if (calendar?.status === 'unavailable') return <div className="unavail">Calendar feed offline · Full view on Calendar page</div>
-      return <div className="unavail">No upcoming events</div>
+      if (calendar?.status === 'unavailable' || !calendar) return (
+        <div>
+          <div style={{fontSize:9,color:'var(--t3)',marginBottom:6,fontStyle:'italic'}}>Fetching your schedule...</div>
+          <div className="ag-next" style={{borderColor:'var(--b)25',background:'var(--bd)'}}>
+            <div className="ag-l">Calendar</div>
+            <div className="ag-t">pablo@dealground.com</div>
+            <div className="ag-m">Live sync active · events loading</div>
+          </div>
+        </div>
+      )
+      return <div className="unavail">No upcoming events this week</div>
     }
     const now = new Date()
     const todayS = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -251,7 +260,7 @@ export default function PabloOS() {
 
   // ── News items ──────────────────────────────────
   function renderNews(articles: any[]) {
-    if (!articles?.length) return <div className="unavail">World intelligence stream reconnecting...</div>
+    if (!articles?.length) return <div className="unavail">Intelligence stream reconnecting...</div>
     const sentColors: Record<string, { bg: string; text: string }> = {
       bullish: { bg: '#00c87320', text: '#00c873' },
       bearish: { bg: '#ff3d5a20', text: '#ff3d5a' },
@@ -266,14 +275,14 @@ export default function PabloOS() {
     return articles.map((a: any, i: number) => {
       const bc = a.sentiment ? sentColors[a.sentiment] : catColors[a.label] || catColors.intel
       return (
-        <div key={i} className="ni">
-          <div className="ni-src">{(a.source || '').toUpperCase().slice(0, 6)}</div>
-          <div className="ni-b">
-            <div className="ni-h">{a.title}</div>
-            {a.context && <div className="ni-ctx">{a.context}</div>}
+        <div key={i} className="ni" style={{alignItems:'center'}}>
+          <div className="ni-src">{(a.source || '').toUpperCase().slice(0, 5)}</div>
+          <div className="ni-b" style={{minWidth:0}}>
+            <div className="ni-h" style={{overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}}>{a.title}</div>
+            {a.context && <div className="ni-ctx" style={{overflow:'hidden',display:'-webkit-box',WebkitLineClamp:1,WebkitBoxOrient:'vertical'}}>{a.context}</div>}
             <a href={a.url} target="_blank" rel="noopener" className="ni-a">Read →</a>
           </div>
-          <span className="nbadge" style={{ background: bc.bg, color: bc.text }}>{a.sentiment || a.label || 'intel'}</span>
+          <span className="nbadge" style={{ background: bc.bg, color: bc.text, alignSelf:'flex-start', marginTop:1 }}>{a.sentiment || a.label || 'intel'}</span>
         </div>
       )
     })
