@@ -106,8 +106,6 @@ function PayForm({ onAdd }: { onAdd: (p: any) => void }) {
 
 export default function PabloOS() {
   const [page, setPage] = useState('ov')
-  const [clock, setClock] = useState('')
-  const [dateStr, setDateStr] = useState('')
   const [intel, setIntel] = useState<any>(null)
   const [marketData, setMarketData] = useState<any>(null)
   const [portData, setPortData] = useState<any>(null)
@@ -118,16 +116,19 @@ export default function PabloOS() {
   const [payments, setPayments] = useState<any[]>([])
   const [finance, setFinance] = useState<any>({})
   const [showPayForm, setShowPayForm] = useState(false)
-  const [payForm, setPayForm] = useState({ name:'', amount:'', date:'', recurring:false })
   const [regime, setRegime] = useState('neutral')
 
-  // clock
+  // clock — uses DOM directly so clock ticking never causes re-render
   useEffect(() => {
     const tick = () => {
       const n = new Date()
-      setClock(String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':'+String(n.getSeconds()).padStart(2,'0'))
+      const ts = String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':'+String(n.getSeconds()).padStart(2,'0')
       const ds=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],ms=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-      setDateStr(ds[n.getDay()]+' '+ms[n.getMonth()]+' '+n.getDate()+' · '+n.getFullYear())
+      const dt = ds[n.getDay()]+' '+ms[n.getMonth()]+' '+n.getDate()+' · '+n.getFullYear()
+      const clkEl = document.getElementById('pablo-clock')
+      const dtEl = document.getElementById('pablo-date')
+      if (clkEl) clkEl.textContent = ts
+      if (dtEl) dtEl.textContent = dt
     }
     tick(); const t = setInterval(tick, 1000); return () => clearInterval(t)
   }, [])
@@ -726,8 +727,8 @@ export default function PabloOS() {
       {/* TOP BAR */}
       <div className="topbar">
         <div className="tb-brand">Pablo OS</div>
-        <div className="tb-clk">{clock}</div>
-        <div className="tb-dt">{dateStr}</div>
+        <div className="tb-clk" id="pablo-clock">--:--:--</div>
+        <div className="tb-dt" id="pablo-date"></div>
         <div className="tb-tix">
           {[
             ['Portfolio', portTotal ? fmt(portTotal) : '--'],
