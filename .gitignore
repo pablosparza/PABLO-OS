@@ -1,0 +1,6 @@
+.env.local
+.env
+vercel-env.txt
+node_modules/
+.next/
+pablo-os.zip
