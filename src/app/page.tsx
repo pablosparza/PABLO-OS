@@ -171,7 +171,13 @@ export default function PabloOS() {
   }, [])
 
   // data loaders — all server-side API routes, zero CORS
-  const loadIntel     = useCallback(async () => { try { const d = await fetch('/api/intelligence').then(r=>r.json()); setIntel(d); setRegime(d.regime||'neutral') } catch {} }, [])
+  const loadIntel = useCallback(async () => {
+    try {
+      const d = await fetch('/api/intelligence').then(r=>r.json())
+      setIntel(d)
+      setRegime(d.regime||'neutral')
+    } catch {}
+  }, [])
   const loadMarket    = useCallback(async () => { try { const d = await fetch('/api/market?type=movers').then(r=>r.json()); setMarketData(d) } catch {} }, [])
   const loadPortfolio = useCallback(async () => { try { const d = await fetch('/api/market?type=portfolio').then(r=>r.json()); setPortData(d) } catch {} }, [])
   const loadMktNews   = useCallback(async () => { try { const d = await fetch('/api/news').then(r=>r.json()); setMktNews(d) } catch {} }, [])
@@ -543,21 +549,21 @@ export default function PabloOS() {
             {worldNews?.status === 'cached' && <span style={{ fontSize:9, color:'#f09020', marginLeft:4 }}>● cached</span>}
             <button className="ca" style={{ marginLeft:'auto' }} onClick={loadWorldNews}><i className="ti ti-refresh" /></button>
           </div>
-          {worldNews?.articles?.length ? worldNews.articles.slice(0,6).map((a:any, i:number) => {
-            const why = whyMatters(a.title)
-            const col = a.label === 'geo' ? '#ff3d5a' : a.label === 'macro' ? '#4080ff' : a.label === 'tech' ? '#8868ff' : 'var(--t2)'
+          {(intel?.worldItems?.length ? intel.worldItems : worldNews?.articles?.slice(0,6) || []).map((a:any, i:number) => {
+            const col = a.label === 'geo' ? '#ff3d5a' : a.label === 'macro' ? '#4080ff' : '#8868ff'
+            const why = a.why || whyMatters(a.title || '')
             return (
-              <div key={i} style={{ display:'flex', gap:7, alignItems:'flex-start', padding:'5px 0', borderBottom:'0.5px solid var(--b1)' }}>
-                <div style={{ fontSize:9, fontWeight:700, color:'var(--t3)', textTransform:'uppercase', minWidth:26, paddingTop:1, flexShrink:0 }}>{(a.source||'').slice(0,5)}</div>
+              <div key={i} style={{ display:'flex', gap:8, alignItems:'flex-start', padding:'7px 0', borderBottom:'0.5px solid var(--b1)' }}>
+                <div style={{ width:3, borderRadius:2, background:col, minHeight:32, flexShrink:0, opacity:.6 }} />
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:12, color:'var(--t1)', lineHeight:1.4, overflow:'hidden', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as any }}>{a.title}</div>
-                  {why && <div style={{ fontSize:10, color:'var(--t2)', marginTop:2, fontStyle:'italic' }}>{why}</div>}
-                  <a href={a.url} target="_blank" rel="noopener" style={{ fontSize:9, color:'#4080ff', opacity:.5 }}>Read →</a>
+                  <div style={{ fontSize:12, color:'var(--t1)', lineHeight:1.45, fontWeight:400 }}>{a.title}</div>
+                  {why && <div style={{ fontSize:10, color:'var(--t2)', marginTop:3, lineHeight:1.4 }}>{why}</div>}
                 </div>
-                <span style={{ ...tagSty(col), marginTop:1 }}>{a.label||'intel'}</span>
+                <span style={{ ...tagSty(col), marginTop:2 }}>{a.label||'intel'}</span>
               </div>
             )
-          }) : (
+          })}
+          {!(intel?.worldItems?.length || worldNews?.articles?.length) && (
             <div>
               {/* Static high-signal fallback when feed is loading or offline */}
               {[
@@ -632,18 +638,20 @@ export default function PabloOS() {
           <div style={{ fontSize:9, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.15em', marginBottom:7, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
             Market intelligence<button className="sw-ca" onClick={loadMktNews}><i className="ti ti-refresh" /></button>
           </div>
-          {mktNews?.articles?.slice(0,4).map((a:any, i:number) => {
-            const col = a.sentiment === 'bullish' ? '#00c873' : a.sentiment === 'bearish' ? '#ff3d5a' : 'var(--t3)'
+          {(intel?.marketItems?.length ? intel.marketItems : mktNews?.articles?.slice(0,4) || []).map((a:any, i:number) => {
+            const col = a.sentiment === 'bullish' ? '#00c873' : a.sentiment === 'bearish' ? '#ff3d5a' : 'var(--t2)'
             return (
-              <div key={i} style={{ padding:'5px 0', borderBottom:'0.5px solid var(--b1)' }}>
-                <div style={{ display:'flex', alignItems:'flex-start', gap:5, marginBottom:2 }}>
-                  <div style={{ flex:1, fontSize:11, color:'var(--t1)', lineHeight:1.4, overflow:'hidden', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as any }}>{a.title}</div>
-                  <span style={{ ...tagSty(col) }}>{a.sentiment||'neu'}</span>
+              <div key={i} style={{ display:'flex', gap:8, alignItems:'flex-start', padding:'7px 0', borderBottom:'0.5px solid var(--b1)' }}>
+                <div style={{ width:3, borderRadius:2, background:col, minHeight:32, flexShrink:0, opacity:.5 }} />
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:12, color:'var(--t1)', lineHeight:1.45 }}>{a.title}</div>
+                  {a.context && <div style={{ fontSize:10, color:'var(--t2)', marginTop:3, lineHeight:1.4 }}>{a.context}</div>}
                 </div>
-                {a.context && <div style={{ fontSize:10, color:'var(--t2)', fontStyle:'italic', lineHeight:1.3 }}>{a.context}</div>}
+                <span style={{ ...tagSty(col) }}>{a.sentiment||'intel'}</span>
               </div>
             )
-          }) || <div style={{ fontSize:11, color:'var(--t3)', fontStyle:'italic' }}>Loading market intelligence...</div>}
+          })}
+          {!(intel?.marketItems?.length || mktNews?.articles?.length) && <div style={{ fontSize:11, color:'var(--t3)', fontStyle:'italic' }}>Loading market intelligence...</div>}
         </div>
 
         {/* PORTFOLIO SNAPSHOT */}
@@ -883,7 +891,7 @@ export default function PabloOS() {
                           <span style={{...tagSty(col)}}>{a.label||'intel'}</span>
                         </div>
                         {why && <div style={{fontSize:10,color:'var(--t2)',fontStyle:'italic',lineHeight:1.3,paddingLeft:32}}>{why}</div>}
-                        <a href={a.url} target="_blank" rel="noopener" style={{fontSize:9,color:'#4080ff',opacity:.5,paddingLeft:32,display:'block'}}>Read →</a>
+                        
                       </div>
                     )
                   })||<div style={{fontSize:11,color:'var(--t3)',fontStyle:'italic'}}>Loading...</div>}
@@ -991,7 +999,7 @@ export default function PabloOS() {
                 <div className="card"><div className="ch"><span className="ch-t">World intelligence — high signal</span><button className="ca" onClick={loadWorldNews}><i className="ti ti-refresh" /></button></div>
                   {worldNews?.articles?.map((a:any,i:number) => {
                     const why = whyMatters(a.title); const col = a.label==='geo'?'#ff3d5a':a.label==='macro'?'#4080ff':'#8868ff'
-                    return <div key={i} style={{padding:'6px 0',borderBottom:'0.5px solid var(--b1)'}}><div style={{display:'flex',gap:6,alignItems:'flex-start',marginBottom:2}}><div style={{fontSize:9,fontWeight:700,color:'var(--t3)',textTransform:'uppercase',minWidth:26,flexShrink:0}}>{(a.source||'').slice(0,5)}</div><div style={{fontSize:12,color:'var(--t1)',lineHeight:1.4,flex:1}}>{a.title}</div><span style={{...tagSty(col)}}>{a.label||'intel'}</span></div>{why&&<div style={{fontSize:10,color:'var(--t2)',fontStyle:'italic',paddingLeft:32}}>{why}</div>}<a href={a.url} target="_blank" rel="noopener" style={{fontSize:9,color:'#4080ff',opacity:.5,paddingLeft:32,display:'block'}}>Read →</a></div>
+                    return <div key={i} style={{padding:'6px 0',borderBottom:'0.5px solid var(--b1)'}}><div style={{display:'flex',gap:6,alignItems:'flex-start',marginBottom:2}}><div style={{fontSize:9,fontWeight:700,color:'var(--t3)',textTransform:'uppercase',minWidth:26,flexShrink:0}}>{(a.source||'').slice(0,5)}</div><div style={{fontSize:12,color:'var(--t1)',lineHeight:1.4,flex:1}}>{a.title}</div><span style={{...tagSty(col)}}>{a.label||'intel'}</span></div>{why&&<div style={{fontSize:10,color:'var(--t2)',fontStyle:'italic',paddingLeft:32}}>{why}</div>}</div>
                   })||<div style={{fontSize:11,color:'var(--t3)',fontStyle:'italic'}}>Loading world intelligence...</div>}
                 </div>
                 <div className="card"><div className="ch"><span className="ch-t">Market intelligence</span><button className="ca" onClick={loadMktNews}><i className="ti ti-refresh" /></button></div>
