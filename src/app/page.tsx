@@ -325,7 +325,7 @@ export default function PabloOS() {
   // ── PAYMENTS INTELLIGENCE ──────────────────────
   const payIntel = (() => {
     const all = payments
-      .map((p, idx) => ({ ...p, eff: p.recurring ? nextMonth(p.date) : p.date, _idx: idx }))
+      .map((p, idx) => ({ ...p, eff: p.recurring ? nextMonth(p.date) : p.date, _idx: idx, _orig: idx }))
       .filter(p => duDays(p.eff) >= 0)
       .sort((a,b) => new Date(a.eff).getTime() - new Date(b.eff).getTime())
       .slice(0, 8)
@@ -457,24 +457,7 @@ export default function PabloOS() {
                   </div>
                 )}
                 {/* UPCOMING this week */}
-                {calIntel.weekEvs.length > 0 && (
-                  <div>
-                    <div style={{ fontSize:9, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:4, fontWeight:600 }}>This week</div>
-                    {calIntel.weekEvs.slice(0,4).map((ev:any, i:number) => {
-                      const analysis = calIntel.analyzeEvent(ev)
-                      return (
-                        <div key={i} style={{ display:'flex', gap:6, alignItems:'flex-start', padding:'4px 0', borderBottom:'0.5px solid var(--b1)' }}>
-                          <div style={{ width:2, background:'var(--t4)', borderRadius:2, minHeight:18, flexShrink:0, marginTop:2 }} />
-                          <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontSize:12, fontWeight:500, color:'var(--t1)', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{ev.summary}</div>
-                            <div style={{ fontSize:10, color:'var(--t3)' }}>{fmtDate(ev.start)} · {ev.allDay?'All day':fmtTime(ev.start)}</div>
-                            {analysis && <div style={{ fontSize:10, color:'var(--t2)', fontStyle:'italic', marginTop:1 }}>{analysis}</div>}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
+
                 {calendar?.status === 'cached' && <div style={{ fontSize:9, color:'var(--t3)', marginTop:6, fontStyle:'italic' }}>Confirmed {new Date(calendar.cachedAt||'').toLocaleTimeString()}</div>}
               </div>
             </div>
@@ -523,34 +506,29 @@ export default function PabloOS() {
       <div style={{ gridColumn:'2/3', display:'flex', flexDirection:'column', gap:6 }}>
         {/* MACRO CONTEXT */}
         <div style={{ background:'var(--s2)', border:'0.5px solid var(--b2)', borderRadius:'var(--radius)', padding:'10px 12px' }}>
-          <div style={{ fontSize:9, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:8 }}>Macro context</div>
+          <div style={{ fontSize:9, fontWeight:600, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'.17em', marginBottom:8, display:'flex', alignItems:'center', gap:6 }}><i className="ti ti-activity" style={{ fontSize:10 }} />Market regime</div>
           {/* Regime headline */}
           <div style={{ background:rc.bg, border:`0.5px solid ${rc.border}`, borderRadius:'var(--rs)', padding:'8px 10px', marginBottom:8 }}>
             <div style={{ fontSize:13, fontWeight:500, color:rc.col, marginBottom:3 }}>{rn.headline}</div>
             <div style={{ fontSize:11, color:'var(--t2)', lineHeight:1.5 }}>{rn.sub}</div>
           </div>
-          {/* Key macro indicators — focused on portfolio-relevant signals */}
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:5 }}>
+          {/* Key signals — 2 most important portfolio-relevant moves only */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:5, marginTop:2 }}>
             {[
-              { label:'IONQ quantum', sym:'IONQ', data:ionqQ },
-              { label:'NVDA AI semis', sym:'NVDA', data:nvdaQ },
-              { label:'VTIP inflation hedge', sym:'VTIP', data:portData?.data?.VTIP },
-              { label:'SOXX semiconductors', sym:'SOXX', data:marketData?.data?.SOXX },
+              { label:'VTIP · Inflation hedge', sym:'VTIP', data:portData?.data?.VTIP },
+              { label:'SOXX · Semiconductors', sym:'SOXX', data:marketData?.data?.SOXX },
             ].map(item => {
               const d = item.data
-              const price = d?.price
               const change = d?.change
               const up = d?.up
               const col = change !== undefined ? (up ? '#00c873' : '#ff3d5a') : 'var(--t3)'
               return (
-                <div key={item.sym} style={{ background:'var(--s3)', borderRadius:'var(--rs)', padding:'6px 8px', border:'0.5px solid var(--b1)' }}>
-                  <div style={{ fontSize:9, color:'var(--t3)', marginBottom:1, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{item.label}</div>
-                  <div style={{ fontSize:11, fontWeight:600, color:'var(--t2)' }}>{item.sym}</div>
+                <div key={item.sym} style={{ background:'var(--s3)', borderRadius:'var(--rs)', padding:'7px 10px', border:'0.5px solid var(--b1)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                  <div style={{ fontSize:10, color:'var(--t3)' }}>{item.label}</div>
                   {change !== undefined
-                    ? <div style={{ fontSize:12, fontWeight:500, color:col }}>{up?'▲':'▼'} {chgFmt(change)}</div>
+                    ? <div style={{ fontSize:12, fontWeight:600, color:col }}>{up?'▲':'▼'} {chgFmt(change)}</div>
                     : <div style={{ fontSize:11, color:'var(--t3)' }}>—</div>
                   }
-                  {price && <div style={{ fontSize:10, color:'var(--t3)' }}>${price < 100 ? price.toFixed(2) : Math.round(price).toLocaleString()}</div>}
                 </div>
               )
             })}
@@ -630,10 +608,10 @@ export default function PabloOS() {
                 <div style={{ width:5, height:5, borderRadius:'50%', background:col, flexShrink:0 }} />
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:12, fontWeight:500, color:'var(--t1)' }}>{p.name}</div>
-                  <div style={{ fontSize:10, color:'var(--t3)' }}>{dtLabel}{d === 0 ? ' · today' : d === 1 ? ' · tomorrow' : ` · in ${d}d`}</div>
+                  <div style={{ fontSize:10, color:'var(--t3)' }}>{dtLabel}{d === 0 ? ' · today' : d === 1 ? ' · tomorrow' : ` · in ${d}d`}{p.recurring ? ' · monthly' : ''}</div>
                 </div>
                 <div style={{ fontSize:12, fontWeight:600, color:col }}>{p.amount||'—'}</div>
-                <button onClick={() => savePays(payments.filter((_,idx)=>idx!==p._idx))} style={{ background:'none', border:'none', color:'var(--r)', fontSize:14, padding:'2px 4px', opacity:.5 }}><i className="ti ti-x" /></button>
+                <button onClick={() => savePays(payments.filter((_,idx)=>idx!==p._orig))} style={{ background:'none', border:'none', color:'var(--r)', fontSize:14, padding:'2px 4px', opacity:.5 }}><i className="ti ti-x" /></button>
               </div>
             )
           }) : <div style={{ fontSize:11, color:'var(--t3)', fontStyle:'italic' }}>No obligations tracked yet</div>}
@@ -957,7 +935,7 @@ export default function PabloOS() {
                         <div style={{fontSize:10,color:'var(--t3)',minWidth:42}}>{months[dt.getMonth()]} {dt.getDate()}</div>
                         <div style={{flex:1,fontSize:12,fontWeight:500,color:'var(--t1)'}}>{p.name}</div>
                         <div style={{fontSize:13,fontWeight:600,color:col}}>{p.amount||'—'}</div>
-                        <button onClick={()=>savePays(payments.filter((_,idx)=>idx!==p._idx))} style={{background:'none',border:'none',color:'var(--r)',fontSize:14,padding:'2px 4px',opacity:.5}}><i className="ti ti-x" /></button>
+                        <button onClick={()=>savePays(payments.filter((_,idx)=>idx!==p._orig))} style={{background:'none',border:'none',color:'var(--r)',fontSize:14,padding:'2px 4px',opacity:.5}}><i className="ti ti-x" /></button>
                       </div>
                     )
                   })}
@@ -997,7 +975,7 @@ export default function PabloOS() {
                     const d = duDays(p.eff); const col = urgentColor(d)
                     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
                     const dt = new Date(p.eff+'T00:00:00')
-                    return <div key={i} style={{display:'flex',alignItems:'center',gap:6,padding:'5px 0',borderBottom:'0.5px solid var(--b1)'}}><div style={{fontSize:10,color:'var(--t3)',minWidth:42}}>{months[dt.getMonth()]} {dt.getDate()}</div><div style={{flex:1,fontSize:12,fontWeight:500,color:'var(--t1)'}}>{p.name}</div><div style={{fontSize:13,fontWeight:600,color:col}}>{p.amount}</div><button onClick={()=>savePays(payments.filter((_,idx)=>idx!==p._idx))} style={{background:'none',border:'none',color:'var(--r)',fontSize:14,padding:'2px 4px',opacity:.5}}><i className="ti ti-x" /></button></div>
+                    return <div key={i} style={{display:'flex',alignItems:'center',gap:6,padding:'5px 0',borderBottom:'0.5px solid var(--b1)'}}><div style={{fontSize:10,color:'var(--t3)',minWidth:42}}>{months[dt.getMonth()]} {dt.getDate()}</div><div style={{flex:1,fontSize:12,fontWeight:500,color:'var(--t1)'}}>{p.name}</div><div style={{fontSize:13,fontWeight:600,color:col}}>{p.amount}</div><button onClick={()=>savePays(payments.filter((_,idx)=>idx!==p._orig))} style={{background:'none',border:'none',color:'var(--r)',fontSize:14,padding:'2px 4px',opacity:.5}}><i className="ti ti-x" /></button></div>
                   })}
                   {payIntel.income > 0 && <div style={{marginTop:8,paddingTop:8,borderTop:'0.5px solid var(--b2)'}}><div style={{fontSize:10,color:'var(--t3)',marginBottom:2}}>Projected free cash</div><div style={{fontSize:16,fontWeight:300,color:payIntel.free>0?'#00c873':'#ff3d5a'}}>{fmt(payIntel.free)}</div></div>}
                   {showPayForm && <PayForm onAdd={(p) => { savePays([...payments, p]); setShowPayForm(false) }} />}
